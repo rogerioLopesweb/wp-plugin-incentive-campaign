@@ -14,7 +14,8 @@ Author URI: https://www.linkedin.com/in/rogerio-tech-lead/
 License: GPL2
 */
 define( 'CP_PLUGIN_URL', __FILE__ );
-require_once CP_PLUGIN_URL . '/includes/login.php';
+include __DIR__ . '/includes/login/Login.php';
 
+Login::init();
 
 ?>
