@@ -2,30 +2,19 @@
     class Login 
     {
         public static function init(){
-        
-
             add_shortcode( 'form_login_custom', 'Login::formLogin' );
             add_shortcode( 'force_redirect_login', 'Login::forceRedirectLogin' );
 			add_shortcode( 'force_redirect_dashboard', 'Login::forceRedirectDashboard' );
 			add_shortcode( 'force_redirect_logoult', 'Login::forceRedirectLogoult' );
         }
-
         public static function formLogin(){
-
-        	
             Login::formTemplate();
             Login::auth();
         }
-
         public static function formTemplate() {
-           
-
-
-              
             if(is_user_logged_in() && current_user_can('administrator')) { 
               return "[form_login_custom]";
            }
-       
             if ( is_user_logged_in() ) {
                 echo 'Você está logado, redirecionando...';
                 $page_slug = get_post_field( 'post_name', $post_id );
@@ -33,7 +22,6 @@
                   wp_redirect( get_site_url(). "/dashboard");
                   exit;
                 }
-               
             } else {
                 // 'Vc não esta locado';
                 echo '<form id="login-form" action="'.get_site_url(). "/login" .'" class="form-login" method="POST">
@@ -54,13 +42,11 @@
 	            </div>
 	          </form>';
             }
-            
         }
         public static function auth(){
             if(isset($_POST['login-form-username'])){
                 $login = sanitize_user($_POST['login-form-username']);
                 $password = esc_attr($_POST['login-form-password']);
-                
                 if($login != "" && $password != ""){
                     $dataUserExternal =  Login::loginExternal($login, $password);
                     if($dataUserExternal["status"] == "S"){
@@ -72,14 +58,12 @@
             }
         }
         public static function loginExternal($login, $password){
-            
             if($login == "teste" && $password == "123456"){
                 return array("status"=>"S", "msg" =>"Login externo efetuado com sucesso!",  "name"=>"Roger", "email"=>"roger@teste.com.br");
             }else{
                 return array("status"=>"F", "msg" =>"Login incorreto!");
             }
         }
-
         public static function loginWP($login, $password, $dataUserExternal){
             $credentials = array();
             $credentials['user_login'] = $login;
@@ -109,16 +93,12 @@
                 'nickname'      =>  $dataUserExternal['name'],
                 'description'   =>  '',
             ) ;
-        
             $id = wp_insert_user( $WP_array ) ;
             Login::loginWP($login, $password, $dataUserExternal);
         }
-        
-
         public  static function loginExternalByToken($token){
             
         }
-
         public  static function forceRedirectLogin(){
         	if(!is_user_logged_in()) { 
                 echo "Você já esta logado, redirecionando...";
@@ -127,26 +107,20 @@
            }
         	
         }
-
         public  static function forceRedirectDashboard(){
         	if( is_user_logged_in() ) { 
-        	echo "Você já esta logado, redirecionando...";
-            wp_redirect( get_site_url(). "/dashboard");
-            exit();
+                echo "Você já esta logado, redirecionando...";
+                wp_redirect( get_site_url(). "/dashboard");
+                exit();
            }
         }
-
         public  static function forceRedirectLogoult(){
         	if( is_user_logged_in() && !current_user_can('administrator') ) { 
-        	echo "Você já esta logado, redirecionando...";
-        	wp_logout();
-            wp_redirect( get_site_url() );
-            exit();
+                echo "Você já esta logado, redirecionando...";
+                wp_logout();
+                wp_redirect( get_site_url() );
+                exit();
            }
         }
-
     }
-
-
-    
 ?>
