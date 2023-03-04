@@ -2,40 +2,59 @@
     class Login 
     {
         public static function init(){
+        
+
             add_shortcode( 'form_login_custom', 'Login::formLogin' );
+            add_shortcode( 'force_redirect_login', 'Login::forceRedirectLogin' );
+			add_shortcode( 'force_redirect_dashboard', 'Login::forceRedirectDashboard' );
+			add_shortcode( 'force_redirect_logoult', 'Login::forceRedirectLogoult' );
         }
 
         public static function formLogin(){
+
+        	
             Login::formTemplate();
             Login::auth();
         }
 
         public static function formTemplate() {
+           
+
+
+              
+            if(is_user_logged_in() && current_user_can('administrator')) { 
+              return "[form_login_custom]";
+           }
        
             if ( is_user_logged_in() ) {
                 echo 'Você está logado, redirecionando...';
-                wp_redirect( get_site_url(). "/dashboard");
-                exit;
+                $page_slug = get_post_field( 'post_name', $post_id );
+                if($page_slug == 'login'){
+                  wp_redirect( get_site_url(). "/dashboard");
+                  exit;
+                }
+               
             } else {
-                echo 'Welcome, visitor!';
+                // 'Vc não esta locado';
+                echo '<form id="login-form" action="'.get_site_url(). "/login" .'" class="form-login" method="POST">
+	            <h3>Entre com sua conta</h3>
+	            <div>
+	              <label for="login-form-username">Usuario:</label>
+	              <input type="text" name="login-form-username" id="login-form-username" 
+	                                        class="form-control" />
+	            </div>
+	            <div>
+	              <label for="login-form-password">Senha:</label>
+	              <input type="password" name="login-form-password" id="login-form-password"
+	                                        class="form-control" />
+	            </div>
+	            <div>
+	              <button type="submit" class="button button-3d"
+	                                        id="login-form-submit">Entrar</button>
+	            </div>
+	          </form>';
             }
-            echo ' <form id="login-form" action="'.get_permalink( get_the_ID() ).'" class="form-login" method="POST">
-            <h3>Entre com sua conta</h3>
-            <div>
-              <label for="login-form-username">Usuario:</label>
-              <input type="text" name="login-form-username" id="login-form-username" 
-                                        class="form-control" />
-            </div>
-            <div>
-              <label for="login-form-password">Senha:</label>
-              <input type="password" name="login-form-password" id="login-form-password"
-                                        class="form-control" />
-            </div>
-            <div>
-              <button type="submit" class="button button-3d"
-                                        id="login-form-submit">Entrar</button>
-            </div>
-          </form>';
+            
         }
         public static function auth(){
             if(isset($_POST['login-form-username'])){
@@ -98,6 +117,32 @@
 
         public  static function loginExternalByToken($token){
             
+        }
+
+        public  static function forceRedirectLogin(){
+        	if(!is_user_logged_in()) { 
+                echo "Você já esta logado, redirecionando...";
+            	wp_redirect( get_site_url(). "/login");
+            	exit();
+           }
+        	
+        }
+
+        public  static function forceRedirectDashboard(){
+        	if( is_user_logged_in() ) { 
+        	echo "Você já esta logado, redirecionando...";
+            wp_redirect( get_site_url(). "/dashboard");
+            exit();
+           }
+        }
+
+        public  static function forceRedirectLogoult(){
+        	if( is_user_logged_in() && !current_user_can('administrator') ) { 
+        	echo "Você já esta logado, redirecionando...";
+        	wp_logout();
+            wp_redirect( get_site_url() );
+            exit();
+           }
         }
 
     }

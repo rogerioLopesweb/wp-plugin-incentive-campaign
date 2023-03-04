@@ -1,13 +1,13 @@
 <?php
 
 /*
-Plugin Name: Dreamone Capaing Incetive
+Plugin Name: Dreamone Campaign Incentive
 
 Description: Campanha de incentivo Montanha de Vendas
 
 Version: 1.0
 
-Author: TECH LEAD - Rogério Lopes
+Author: TECH LEAD - Rogério Lopes 
 
 Author URI: https://www.linkedin.com/in/rogerio-tech-lead/
 
