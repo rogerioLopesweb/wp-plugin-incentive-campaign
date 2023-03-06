@@ -6,6 +6,7 @@
             add_shortcode( 'force_redirect_login', 'Login::forceRedirectLogin' );
 			add_shortcode( 'force_redirect_dashboard', 'Login::forceRedirectDashboard' );
 			add_shortcode( 'force_redirect_logoult', 'Login::forceRedirectLogoult' );
+            add_shortcode( 'login_external_token', 'Login::loginExternalByToken' );
         }
         public static function formLogin(){
             Login::formTemplate();
@@ -96,8 +97,53 @@
             $id = wp_insert_user( $WP_array ) ;
             Login::loginWP($login, $password, $dataUserExternal);
         }
-        public  static function loginExternalByToken($token){
-            
+        public  static function loginExternalByToken(){
+
+            if(is_user_logged_in() && current_user_can('administrator')) { 
+                return "[login_external_token]";
+             }
+            Login::forceRedirectDashboard();
+
+            if(!empty($_GET['authtoken'])){
+                echo "<h3>Dados do usuários em Json</h3>";
+                $str = '{"name":"Don joe", "email":"jondoe@teste.com.br", "cpf":"00146546545", "entity": "XPTO", "seller":"farmer", "region": "Suldeste", "city": "Osasco", "state": "São Paulo" }';
+                echo $str;
+                echo "<br>";
+                $tk  = base64_encode($str);
+                echo "<h3>Converte o json em Base64, gerando token abaixo, copie e cole na url depois das variavel ?authtoken=</h3>";
+                echo $tk;
+                $token =  trim($_GET['authtoken']);
+                echo "<h3>Token URL:</h3>";
+                echo $token;
+                $str = base64_decode($token);
+                
+                $dataUser = json_decode($str,true);
+                echo "<h3>Decodefica o token Base64: </h3>";
+                echo "<br>". $str;
+
+                echo var_dump($dataUser);
+               /* if(array_key_exists('name', $dataUser)){
+                    echo "<br>". $dataUser["name"];
+                }
+                if(array_key_exists('email', $dataUser)){
+                    echo "<br>". $dataUser["email"];
+                }
+                if(array_key_exists('cpf', $dataUser)){
+                    echo "<br>". $dataUser["cpf"];
+                }
+                if(array_key_exists('entity', $dataUser)){
+                    echo "<br>". $dataUser["entity"];
+                }
+                if(array_key_exists('seller', $dataUser)){
+                    echo "<br>". $dataUser["seller"];
+                }
+                if(array_key_exists('region', $dataUser)){
+                    echo "<br>". $dataUser["region"];
+                }
+                if(array_key_exists('state', $dataUser)){
+                    echo "<br>". $dataUser["state"];
+                }*/
+            }
         }
         public  static function forceRedirectLogin(){
         	if(!is_user_logged_in()) { 
@@ -105,7 +151,6 @@
             	wp_redirect( get_site_url(). "/login");
             	exit();
            }
-        	
         }
         public  static function forceRedirectDashboard(){
         	if( is_user_logged_in() ) { 
@@ -115,9 +160,12 @@
            }
         }
         public  static function forceRedirectLogoult(){
-        	if( is_user_logged_in() && !current_user_can('administrator') ) { 
+        	if( is_user_logged_in()) { 
                 echo "Você já esta logado, redirecionando...";
                 wp_logout();
+                wp_redirect( get_site_url() );
+                exit();
+           }else{
                 wp_redirect( get_site_url() );
                 exit();
            }
