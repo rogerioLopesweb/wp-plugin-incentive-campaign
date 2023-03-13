@@ -7,6 +7,7 @@
 			add_shortcode( 'force_redirect_dashboard', 'Login::forceRedirectDashboard' );
 			add_shortcode( 'force_redirect_logoult', 'Login::forceRedirectLogoult' );
             add_shortcode( 'login_external_token', 'Login::loginExternalByToken' );
+            add_action("wp", "Login::forceRedirectAcceptedCampaignTerms");
         }
         public static function formLogin(){
             Login::formTemplate();
@@ -18,17 +19,21 @@
            }
             if ( is_user_logged_in() ) {
                 echo 'Você está logado, redirecionando...';
-                $page_slug = get_post_field( 'post_name', $post_id );
-                if($page_slug == 'login'){
-                  wp_redirect( get_site_url(). "/dashboard");
-                  exit;
+                if(get_the_ID() != false){
+                    $post_id = get_the_ID();
+                    $page_slug = get_post_field( 'post_name', $post_id );
+                    if($page_slug == 'login'){
+                        Login::forceRedirectDashboard();
+                        exit;
+                    }
                 }
+                
             } else {
                 // 'Vc não esta locado';
                 echo '<form id="login-form" action="'.get_site_url(). "/login" .'" class="form-login" method="POST">
 	            <h3>Entre com sua conta</h3>
 	            <div>
-	              <label for="login-form-username">Usuario:</label>
+	              <label for="login-form-username">CPF:</label>
 	              <input type="text" name="login-form-username" id="login-form-username" 
 	                                        class="form-control" />
 	            </div>
@@ -58,12 +63,87 @@
                 }
             }
         }
+        public static function loginExternalGetToken($login, $password){
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => "http://service2.funifier.com/v3/auth/token",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => "",
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_POSTFIELDS => "apiKey=spc_vendas&grant_type=password&username=".$login."&password=".$password,
+                CURLOPT_HTTPHEADER => [
+                    "Content-Type: application/x-www-form-urlencoded"
+                ],
+            ]);
+
+            $response = curl_exec($curl);
+            $err = curl_error($curl);
+            curl_close($curl);
+
+            if ($err) {
+                return "F";
+            } else {
+
+                $data = json_decode($response,true);
+
+                if($data["statusCode"] == 500){
+                    return "F";
+                }
+                return $data["access_token"];
+            }
+        }
+        public static function loginExternalGetDataUserByToken($token){
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+              CURLOPT_URL => "https://service2.funifier.com/v3/player/me",
+              CURLOPT_RETURNTRANSFER => true,
+              CURLOPT_ENCODING => "",
+              CURLOPT_MAXREDIRS => 10,
+              CURLOPT_TIMEOUT => 30,
+              CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+              CURLOPT_CUSTOMREQUEST => "GET",
+              CURLOPT_POSTFIELDS => "",
+              CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer Bearer " . $token,
+                "Bearer: " . $token
+              ],
+            ]);
+            
+            $response = curl_exec($curl);
+            $err = curl_error($curl);
+            
+            curl_close($curl);
+            
+            if ($err) {
+              return "F";
+            } else {
+              return $response;
+            }
+        }
         public static function loginExternal($login, $password){
             if($login == "teste" && $password == "123456"){
                 return array("status"=>"S", "msg" =>"Login externo efetuado com sucesso!",  "name"=>"Roger", "email"=>"roger@teste.com.br");
-            }else{
+            }
+            $token = Login::loginExternalGetToken($login, $password);
+            
+            if($token == "F"){
                 return array("status"=>"F", "msg" =>"Login incorreto!");
             }
+           
+            $dataUserStr = Login::loginExternalGetDataUserByToken($token);
+           
+            if($dataUserStr == "F"){
+                return array("status"=>"F", "msg" =>"Login incorreto! Falha ao pegar os dados");
+            }
+
+            $dataUser = json_decode($dataUserStr,true);
+    
+            return array("status"=>"S", "msg" =>"Login externo efetuado com sucesso!",  "name"=>$dataUser["name"], "email"=>$dataUser["email"], "login" => $login, "password" => $password);
+
+
         }
         public static function loginWP($login, $password, $dataUserExternal){
             $credentials = array();
@@ -84,29 +164,29 @@
             }
         }
         public static function registerUserWP($login, $password, $dataUserExternal){
+           $arrayName =  Login::split_name($dataUserExternal['name']);
             $WP_array = array (
                 'user_login'    =>  $login,
                 'user_email'    =>  $dataUserExternal['email'],
                 'user_pass'     =>  $password,
                 'user_url'      =>  '',
-                'first_name'    =>  $dataUserExternal['name'],
-                'last_name'     =>  '',
-                'nickname'      =>  $dataUserExternal['name'],
+                'display_name'  =>  $arrayName['first_name'],
+                'first_name'    =>  $arrayName['first_name'],
+                'last_name'     =>  $arrayName['last_name'] ,
+                'nickname'      =>  $dataUserExternal['first_name'],
                 'description'   =>  '',
             ) ;
             $id = wp_insert_user( $WP_array ) ;
             Login::loginWP($login, $password, $dataUserExternal);
         }
         public  static function loginExternalByToken(){
-
             if(is_user_logged_in() && current_user_can('administrator')) { 
                 return "[login_external_token]";
              }
             Login::forceRedirectDashboard();
-
             if(!empty($_GET['authtoken'])){
                 echo "<h3>Dados do usuários em Json</h3>";
-                $str = '{"name":"Don joe", "email":"jondoe@teste.com.br", "cpf":"00146546545", "entity": "XPTO", "seller":"farmer", "region": "Suldeste", "city": "Osasco", "state": "São Paulo" }';
+                $str = '{"name":"Don joe", "email":"jondoe@teste.com.br", "telefone":"(11)99999-9999", "cpf":"00146546545", "entity": "XPTO", "seller":"FARMER", "region": "Suldeste", "city": "Osasco", "state": "São Paulo" }';
                 echo $str;
                 echo "<br>";
                 $tk  = base64_encode($str);
@@ -169,6 +249,35 @@
                 wp_redirect( get_site_url() );
                 exit();
            }
+        }
+        public  static function forceRedirectAcceptedCampaignTerms(){
+        	if( is_user_logged_in() && !current_user_can('administrator') ) { 
+                if(get_the_ID() != false){
+                    $post_id = get_the_ID();
+                    $page_slug = get_post_field( 'post_name', $post_id );
+                    if($page_slug != 'aceite-dos-termos-da-campanha' && $page_slug != 'logout'){
+                        $campaign_terms = get_user_meta( get_current_user_id() , "user-accepted-of-campaign-terms", true );
+                        if($campaign_terms != "S"){
+                            echo "Você já esta logado, redirecionando...";
+                            wp_redirect( get_site_url(). "/aceite-dos-termos-da-campanha");
+                            exit();
+                        }
+                    }
+                }
+           }
+        }
+        public static function split_name($namaFull){
+            $arr = explode(' ', $namaFull);
+            $num = count($arr);
+            $first_name = $middle_name = $last_name = null;
+            if ($num == 2) {
+                list($first_name, $last_name) = $arr;
+            } else {
+                list($first_name, $middle_name, $last_name) = $arr;
+            }
+            return (empty($first_name) || $num > 3) ? "" : compact(
+                'first_name', 'middle_name', 'last_name'
+            );
         }
     }
 ?>
