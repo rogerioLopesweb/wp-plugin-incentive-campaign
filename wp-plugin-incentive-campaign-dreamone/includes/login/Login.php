@@ -27,24 +27,23 @@
                         exit;
                     }
                 }
-                
             } else {
                 // 'Vc não esta locado';
                 echo '<form id="login-form" action="'.get_site_url(). "/login" .'" class="form-login" method="POST">
-	            <h3>Entre com sua conta</h3>
 	            <div>
 	              <label for="login-form-username">CPF:</label>
-	              <input type="text" name="login-form-username" id="login-form-username" 
-	                                        class="form-control" />
+	              <input type="text" name="login-form-username" id="login-form-username" class="form-btn-username" />
 	            </div>
 	            <div>
-	              <label for="login-form-password">Senha:</label>
-	              <input type="password" name="login-form-password" id="login-form-password"
-	                                        class="form-control" />
-	            </div>
-	            <div>
-	              <button type="submit" class="button button-3d"
-	                                        id="login-form-submit">Entrar</button>
+	              <label for="login-form-password">SENHA:</label>
+					<div class="password-container">
+					  <input type="password" name="login-form-password" id="login-form-password" class="form-btn-password">
+					  <span class="password-toggle-icon" onclick="togglePasswordVisibility()"><i class="fa fa-eye"></i></span>
+					</div>
+				</div>
+	            <div style="display:flex; align-items:center; justify-content:space-between;">
+					<a href="https://spc.funifier.com/#!/esqueceu" target="_blank" class="form-btn-lost-password" role="button">ESQUECI MINHA SENHA</a>
+					<button type="submit" class="form-btn-submit" id="login-form-submit">ENTRAR</button>
 	            </div>
 	          </form>';
             }
@@ -54,6 +53,7 @@
                 $login = sanitize_user($_POST['login-form-username']);
                 $password = esc_attr($_POST['login-form-password']);
                 if($login != "" && $password != ""){
+                    $login =  str_replace(array('-', '.','/'), '', $login);
                     $dataUserExternal =  Login::loginExternal($login, $password);
                     if($dataUserExternal["status"] == "S"){
                         Login::loginWP($login, $password, $dataUserExternal);
@@ -73,7 +73,7 @@
                 CURLOPT_TIMEOUT => 30,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS => "apiKey=spc_vendas&grant_type=password&username=".$login."&password=".$password,
+                CURLOPT_POSTFIELDS => "apiKey=spc_vendas_dev&grant_type=password&username=".$login."&password=".$password,
                 CURLOPT_HTTPHEADER => [
                     "Content-Type: application/x-www-form-urlencoded"
                 ],
@@ -86,7 +86,6 @@
             if ($err) {
                 return "F";
             } else {
-
                 $data = json_decode($response,true);
 
                 if($data["statusCode"] == 500){
@@ -111,12 +110,37 @@
                 "Bearer: " . $token
               ],
             ]);
+            $response = curl_exec($curl);
+            $err = curl_error($curl);
+            curl_close($curl);
+            if ($err) {
+              return "F";
+            } else {
+              return $response;
+            }
+        }
+
+        public static function loginExternalGetDataUserFullByTokenID($token, $idUser){
+            $curl = curl_init();
+            curl_setopt_array($curl, [
+                CURLOPT_URL => "https://service2.funifier.com/v3/database/player/aggregate",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => "",
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 30,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => "POST",
+                CURLOPT_POSTFIELDS => '[{"$match":{ "_id":"'.$idUser.'" }}, {"$project":{ "_id":1, "image":"$image.original.url", "name":1, "email":1, "extra":1 }}, {"$lookup": {"from":"spc_entity__c", "localField":"extra.entity", "foreignField":"_id", "as":"entity" }}, {"$unwind" : "$entity" }]',
+                CURLOPT_HTTPHEADER => [
+                "Authorization: Bearer Bearer " . $token,
+                "Bearer: " . $token,
+                "Content-Type: application/json"
+              ],
+            ]);
             
             $response = curl_exec($curl);
             $err = curl_error($curl);
-            
             curl_close($curl);
-            
             if ($err) {
               return "F";
             } else {
@@ -132,7 +156,6 @@
             if($token == "F"){
                 return array("status"=>"F", "msg" =>"Login incorreto!");
             }
-           
             $dataUserStr = Login::loginExternalGetDataUserByToken($token);
            
             if($dataUserStr == "F"){
@@ -141,7 +164,13 @@
 
             $dataUser = json_decode($dataUserStr,true);
     
-            return array("status"=>"S", "msg" =>"Login externo efetuado com sucesso!",  "name"=>$dataUser["name"], "email"=>$dataUser["email"], "login" => $login, "password" => $password);
+            return array("status"=>"S", 
+            "msg" =>"Login externo efetuado com sucesso!",  
+            "idUser"=>$dataUser["_id"], 
+            "name"=>$dataUser["name"], 
+            "email"=>$dataUser["email"], 
+            "login" => $login, 
+            "password" => $password);
 
 
         }
@@ -150,6 +179,11 @@
             $credentials['user_login'] = $login;
             $credentials['user_password'] = $password;
             $user = wp_signon($credentials, "");
+
+            if ( is_wp_error($user) ) {
+                $credentials['user_password'] = $login ."@Tmp";
+                $user = wp_signon($credentials, "");
+            }
 
             if ( is_wp_error($user) ) {
                 Login::registerUserWP($login, $password, $dataUserExternal);
@@ -185,24 +219,38 @@
              }
             Login::forceRedirectDashboard();
             if(!empty($_GET['authtoken'])){
-                echo "<h3>Dados do usuários em Json</h3>";
-                $str = '{"name":"Don joe", "email":"jondoe@teste.com.br", "telefone":"(11)99999-9999", "cpf":"00146546545", "entity": "XPTO", "seller":"FARMER", "region": "Suldeste", "city": "Osasco", "state": "São Paulo" }';
-                echo $str;
-                echo "<br>";
-                $tk  = base64_encode($str);
-                echo "<h3>Converte o json em Base64, gerando token abaixo, copie e cole na url depois das variavel ?authtoken=</h3>";
-                echo $tk;
-                $token =  trim($_GET['authtoken']);
-                echo "<h3>Token URL:</h3>";
-                echo $token;
-                $str = base64_decode($token);
                 
-                $dataUser = json_decode($str,true);
-                echo "<h3>Decodefica o token Base64: </h3>";
-                echo "<br>". $str;
+                $authtoken =  trim($_GET['authtoken']);
+                $authtoken = base64_decode($authtoken);
+                $token =  trim(str_replace(array('Bearer', 'bearer',' '), '', $authtoken));
+              //  echo "<h3>Token decodificado</h3>";
+               // echo  $token;
+                $dataUserExternal = json_decode(Login::loginExternalGetDataUserByToken($token),true);
+                
+                //echo var_dump($dataUserStr);
+                $idUser =  $dataUserExternal["_id"];
 
-                echo var_dump($dataUser);
-               /* if(array_key_exists('name', $dataUser)){
+                $dataUser = Login::loginExternalGetDataUserFullByTokenID($token, $idUser);
+                
+                if($dataUser == "F") {
+                    echo "<h3>Algo deu errado!</h3>";
+                    exit;
+                }
+                //var_dump($dataUser);
+
+                $user = get_user_by( 'login', $idUser );
+                
+                if ( ! empty( $user ) ) {
+                    $password = $user->user_pass;
+                    Login::loginWP($idUser, $password , $dataUserExternal);
+                }else{
+                    $password = $idUser."@Tmp";
+                    Login::loginWP($idUser, $password , $dataUserExternal);
+                }
+
+               
+
+                /* if(array_key_exists('name', $dataUser)){
                     echo "<br>". $dataUser["name"];
                 }
                 if(array_key_exists('email', $dataUser)){
