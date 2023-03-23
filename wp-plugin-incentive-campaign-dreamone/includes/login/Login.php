@@ -1,5 +1,5 @@
 <?php
-    class Login 
+    class Login
     {
         public static function init(){
             add_shortcode( 'form_login_custom', 'Login::formLogin' );
@@ -14,11 +14,11 @@
             Login::auth();
         }
         public static function formTemplate() {
-            if(is_user_logged_in() && current_user_can('administrator')) { 
+            if(is_user_logged_in() && current_user_can('administrator')) {
               return "[form_login_custom]";
            }
             if ( is_user_logged_in() ) {
-                echo 'Você está logado, redirecionando...';
+                echo 'VOCÊ ESTÁ LOGADO, REDIRECIONANDO...';
                 if(get_the_ID() != false){
                     $post_id = get_the_ID();
                     $page_slug = get_post_field( 'post_name', $post_id );
@@ -78,16 +78,13 @@
                     "Content-Type: application/x-www-form-urlencoded"
                 ],
             ]);
-
             $response = curl_exec($curl);
             $err = curl_error($curl);
             curl_close($curl);
-
             if ($err) {
                 return "F";
             } else {
                 $data = json_decode($response,true);
-
                 if($data["statusCode"] == 500){
                     return "F";
                 }
@@ -119,7 +116,6 @@
               return $response;
             }
         }
-
         public static function loginExternalGetDataUserFullByTokenID($token, $idUser){
             $curl = curl_init();
             curl_setopt_array($curl, [
@@ -137,7 +133,6 @@
                 "Content-Type: application/json"
               ],
             ]);
-            
             $response = curl_exec($curl);
             $err = curl_error($curl);
             curl_close($curl);
@@ -149,45 +144,37 @@
         }
         public static function loginExternal($login, $password){
             if($login == "teste" && $password == "123456"){
-                return array("status"=>"S", "msg" =>"Login externo efetuado com sucesso!",  "name"=>"Roger", "email"=>"roger@teste.com.br");
+                return array("status"=>"S", "msg" =>"<div class='sucesso-login'>LOGIN EXTERNO EFETUADO COM SUCESSO</div>",  "name"=>"Roger", "email"=>"roger@teste.com.br");
             }
             $token = Login::loginExternalGetToken($login, $password);
-            
             if($token == "F"){
-                return array("status"=>"F", "msg" =>"Login incorreto!");
+                return array("status"=>"F", "msg" =>"<div class='erro-login'>CPF E/OU SENHA INCORRETO(S)</div>");
             }
             $dataUserStr = Login::loginExternalGetDataUserByToken($token);
-           
             if($dataUserStr == "F"){
-                return array("status"=>"F", "msg" =>"Login incorreto! Falha ao pegar os dados");
+                return array("status"=>"F", "msg" =>"<div class='erro-login'>FALHA AO CONSULTAR OS DADOS DE LOGIN</div>");
             }
-
             $dataUser = json_decode($dataUserStr,true);
-    
-            return array("status"=>"S", 
-            "msg" =>"Login externo efetuado com sucesso!",  
-            "idUser"=>$dataUser["_id"], 
-            "name"=>$dataUser["name"], 
-            "email"=>$dataUser["email"], 
-            "login" => $login, 
+            return array("status"=>"S",
+            "msg" =>"<div class='sucesso-login'>LOGIN EXTERNO EFETUADO COM SUCESSO</div>",
+            "idUser"=>$dataUser["_id"],
+            "name"=>$dataUser["name"],
+            "email"=>$dataUser["email"],
+            "login" => $login,
             "password" => $password);
-
-
         }
         public static function loginWP($login, $password, $dataUserExternal){
             $credentials = array();
             $credentials['user_login'] = $login;
             $credentials['user_password'] = $password;
             $user = wp_signon($credentials, "");
-
             if ( is_wp_error($user) ) {
                 $credentials['user_password'] = $login ."@Tmp";
                 $user = wp_signon($credentials, "");
             }
-
             if ( is_wp_error($user) ) {
                 Login::registerUserWP($login, $password, $dataUserExternal);
-            } else {    
+            } else {
                 wp_clear_auth_cookie();
                 do_action('wp_login', $user->ID);
                 wp_set_current_user($user->ID);
@@ -214,32 +201,26 @@
             Login::loginWP($login, $password, $dataUserExternal);
         }
         public  static function loginExternalByToken(){
-            if(is_user_logged_in() && current_user_can('administrator')) { 
+            if(is_user_logged_in() && current_user_can('administrator')) {
                 return "[login_external_token]";
              }
             Login::forceRedirectDashboard();
             if(!empty($_GET['authtoken'])){
-                
                 $authtoken =  trim($_GET['authtoken']);
                 $authtoken = base64_decode($authtoken);
                 $token =  trim(str_replace(array('Bearer', 'bearer',' '), '', $authtoken));
               //  echo "<h3>Token decodificado</h3>";
                // echo  $token;
                 $dataUserExternal = json_decode(Login::loginExternalGetDataUserByToken($token),true);
-                
                 //echo var_dump($dataUserStr);
                 $idUser =  $dataUserExternal["_id"];
-
                 $dataUser = Login::loginExternalGetDataUserFullByTokenID($token, $idUser);
-                
                 if($dataUser == "F") {
-                    echo "<h3>Algo deu errado!</h3>";
+                    echo "<div class='erro-login'>OCORREU UM ERRO, FAVOR TENTAR NOVAMENTE</div>";
                     exit;
                 }
                 //var_dump($dataUser);
-
                 $user = get_user_by( 'login', $idUser );
-                
                 if ( ! empty( $user ) ) {
                     $password = $user->user_pass;
                     Login::loginWP($idUser, $password , $dataUserExternal);
@@ -247,9 +228,6 @@
                     $password = $idUser."@Tmp";
                     Login::loginWP($idUser, $password , $dataUserExternal);
                 }
-
-               
-
                 /* if(array_key_exists('name', $dataUser)){
                     echo "<br>". $dataUser["name"];
                 }
@@ -274,22 +252,22 @@
             }
         }
         public  static function forceRedirectLogin(){
-        	if(!is_user_logged_in()) { 
-                echo "Você já esta logado, redirecionando...";
+        	if(!is_user_logged_in()) {
+                echo "<div class='sucesso-login'>VOCÊ JÁ ESTÁ LOGADO, REDIRECIONANDO...</div>";
             	wp_redirect( get_site_url(). "/login");
             	exit();
            }
         }
         public  static function forceRedirectDashboard(){
-        	if( is_user_logged_in() ) { 
-                echo "Você já esta logado, redirecionando...";
+        	if( is_user_logged_in() ) {
+                echo "<div class='sucesso-login'>VOCÊ JÁ ESTÁ LOGADO, REDIRECIONANDO...</div>";
                 wp_redirect( get_site_url(). "/dashboard");
                 exit();
            }
         }
         public  static function forceRedirectLogoult(){
-        	if( is_user_logged_in()) { 
-                echo "Você já esta logado, redirecionando...";
+        	if( is_user_logged_in()) {
+                echo "<div class='sucesso-login'>VOCÊ JÁ ESTÁ LOGADO, REDIRECIONANDO...</div>";
                 wp_logout();
                 wp_redirect( get_site_url() );
                 exit();
@@ -299,15 +277,15 @@
            }
         }
         public  static function forceRedirectAcceptedCampaignTerms(){
-        	if( is_user_logged_in() && !current_user_can('administrator') ) { 
+        	if( is_user_logged_in() && !current_user_can('administrator') ) {
                 if(get_the_ID() != false){
                     $post_id = get_the_ID();
                     $page_slug = get_post_field( 'post_name', $post_id );
-                    if($page_slug != 'aceite-dos-termos-da-campanha' && $page_slug != 'logout'){
+                    if($page_slug != 'termos-da-campanha' && $page_slug != 'logout'){
                         $campaign_terms = get_user_meta( get_current_user_id() , "user-accepted-of-campaign-terms", true );
                         if($campaign_terms != "S"){
-                            echo "Você já esta logado, redirecionando...";
-                            wp_redirect( get_site_url(). "/aceite-dos-termos-da-campanha");
+                            echo "<div class='sucesso-login'>VOCÊ JÁ ESTÁ LOGADO, REDIRECIONANDO...</div>";
+                            wp_redirect( get_site_url(). "/termos-da-campanha");
                             exit();
                         }
                     }

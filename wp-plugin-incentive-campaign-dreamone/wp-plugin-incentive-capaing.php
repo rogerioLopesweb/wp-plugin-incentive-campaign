@@ -15,7 +15,9 @@ License: GPL2
 */
 define( 'CP_PLUGIN_URL', __FILE__ );
 include __DIR__ . '/includes/login/Login.php';
+include __DIR__ . '/includes/points/SaveEntityData.php';
 
 Login::init();
+SaveEntityData::init();
 
 ?>
