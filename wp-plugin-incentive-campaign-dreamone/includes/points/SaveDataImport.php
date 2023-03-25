@@ -49,9 +49,9 @@
                     $query->the_post();
 
                     $post_id = get_the_ID();
-                    readSaveEntityData($post_id);
-                    readSaveRankingEntityData($post_id);
-                    readSaveRankingSellersData($post_id);
+                    SaveDataImport::readSaveEntityData($post_id);
+                    SaveDataImport::readSaveRankingEntityData($post_id);
+                    SaveDataImport::readSaveRankingSellersData($post_id);
                     
                     update_post_meta($post_id, 'sincronizacao-status', 'OK');
                 }
@@ -281,7 +281,7 @@
                 $new_post_id = wp_insert_post($entidade_post);
                 // Adiciona os metadados ao post_type 'ranking-vendedores'
                 update_post_meta($new_post_id, 'cpf-vendedor', $cpf_vendedor);
-                update_post_meta($$new_post_id, 'ano', $ano);
+                update_post_meta($new_post_id, 'ano', $ano);
                 update_post_meta($new_post_id, 'trimestre', $trimestre);
                 update_post_meta($new_post_id, 'pontos-trilha', $pontos_trilha);
                 update_post_meta($new_post_id, 'pontos-vendas-hunter', $pontos_vendas_hunter);
