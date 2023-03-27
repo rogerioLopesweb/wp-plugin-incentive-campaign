@@ -7,7 +7,7 @@
             add_action('save_post', array('SaveEntityData', 'custom_display_post_states'), 10, 3);
             add_action( 'save_post',  array('SaveEntityData', 'changeStatus'),10,3 );
             //add_action('save_post', array('SaveEntityData', 'readSaveEntityData'), 999, 3);*/
-           //dominio/wp-json/api/v2/sincronizacao/entidades
+           //dominio/wp-json/api/v2/sincronizacao/importacao/
             add_action(
                 'rest_api_init',
                 function () {
@@ -16,7 +16,7 @@
                         '/sincronizacao/importacao/',
                         array(
                           'methods' => 'GET',
-                          'callback' => 'SaveEntityData::readSaveData',
+                          'callback' => 'SaveDataImport::readSaveData',
                         )
                     );
                 }
@@ -214,12 +214,12 @@
            
             $vendas_hunter  =  get_post_meta($post_id, 'realizado-total-hunter', true);
             $meta_hunter  =  get_post_meta($post_id, 'faturamento-minimo-hunter', true);
-            $porcentual_atingimento_hunter  =  get_post_meta($post_id, '', true);
+            $porcentual_atingimento_hunter  =  get_post_meta($post_id, 'atingimento-hunter', true);
 
             $pontos_vendas_farmer =  get_post_meta($post_id, 'pontos-farmer-vendas', true);
             $pontos_total_farmer =  get_post_meta($post_id, 'pontos-farmer-vendas-trilha-total', true);
             $nacional_posicao_farmer =  get_post_meta($post_id, 'ranking-premio-nacional-farmer', true);
-            $farmer_posicao_farmer =  get_post_meta($post_id, 'ranking-premio-regional-farmer', true);
+            $regional_posicao_farmer =  get_post_meta($post_id, 'ranking-premio-regional-farmer', true);
             $vendas_farmer =  get_post_meta($post_id, 'realizado-total-farmer', true);
             $meta_farmer =  get_post_meta($post_id, 'faturamento-minimo-farmer', true);
             $porcentual_atingimento_farmer =  get_post_meta($post_id, 'atingimento-farmer', true);
@@ -251,6 +251,7 @@
                 // Atualizar o título do post
                 $post->post_title = $vendedor_nome;
                 wp_update_post($post);
+                update_post_meta($post->ID, 'vendedor-nome', $vendedor_nome);
                 update_post_meta($post->ID, 'cpf-vendedor', $cpf_vendedor);
                 update_post_meta($post->ID, 'ano', $ano);
                 update_post_meta($post->ID, 'trimestre', $trimestre);
