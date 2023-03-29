@@ -102,13 +102,14 @@
             );
             $vendedores_query = new WP_Query($args);
                 // Se o $codigo_entidade existir, atualize-o, caso contrário, insira um novo
-            if ($vendedoresquery->have_posts()) {
+            if ($vendedores_query->have_posts()) {
                 // Atualizar o post existente
                 $vendedores_post = $vendedores_query->posts[0];
                 $vendedores_post_id = $vendedores_post->ID;
                 // Atualizar o título do post
                 $vendedores_post->post_title = $nome_vendedor;
                 wp_update_post($vendedores_post);
+                update_post_meta($vendedores_post_id, 'cpf-vendedor', $cpf_vendedor);
                 update_post_meta($vendedores_post_id, 'codigo-entidade', $codigo_entidade);
                 update_post_meta($vendedores_post_id, 'codigo-operador', $codigo_operador);
                 update_post_meta($vendedores_post_id, 'uf-vendedor', $uf_vendedor);
@@ -123,6 +124,7 @@
                 // Insere o post e retorna o ID
                 $vendedores_post_id = wp_insert_post($vendedores_post);
                 // Adiciona os metadados ao post_type 'vendedores'
+                update_post_meta($vendedores_post_id, 'cpf-vendedor', $cpf_vendedor);
                 update_post_meta($vendedores_post_id, 'codigo-entidade', $codigo_entidade);
                 update_post_meta($vendedores_post_id, 'codigo-operador', $codigo_operador);
                 update_post_meta($vendedores_post_id, 'uf-vendedor', $uf_vendedor);

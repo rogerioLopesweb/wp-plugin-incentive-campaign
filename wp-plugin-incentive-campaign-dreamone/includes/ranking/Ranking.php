@@ -5,6 +5,7 @@
         {
             add_shortcode('ranking_entidades', 'Ranking::entidades');
             add_shortcode('ranking_vendedores_nacional', 'Ranking::vendedoresNacional');
+            add_shortcode('ranking_vendedores_regional', 'Ranking::vendedoresRegional');
         }
         public static function entidades($atts){
             // Atributos padrão
@@ -194,7 +195,7 @@
             //pega todos os vendedores da mesma regiao
             $args = array(
                 'post_type' => 'vendedores',
-                'posts_per_page' => -1, 
+                'posts_per_page' => 1, 
                 'meta_query' => array(
                     array(
                         'key' => 'regiao-vendedor',
@@ -205,13 +206,16 @@
             );
             
             $query = new WP_Query($args);
-            $regiao_vendedor = "---";
+            $lista_vendedores = array();
             if ($query->have_posts()) {
-                $post_id = get_the_ID();
-                $regiao_vendedor  = get_post_meta($post_id, 'regiao-vendedor', true);
+                while ($result->have_posts()) {
+                    $post_id = get_the_ID();
+                    $cpf_vendedor = get_post_meta($post_id, 'cpf-vendedor', true);
+                    $lista_vendedores.push($cpf_vendedor);
+                }
+                wp_reset_postdata();
             }
-
-           
+            wp_reset_query();
 
            $args = array(
             'post_type' => 'ranking-vendedores',
@@ -231,12 +235,18 @@
                     'value' =>  $trimestre,
                     'compare' => '='
                 )
-            ),
+                ,
+                array(
+                    'key' => 'cpf',
+                    'value' =>  $lista_vendedores,
+                    'compare' => 'in'
+                )
+            )
         );
             
             $result = new WP_Query($args);
             
-            if ($result->have_posts()) {
+            if ($result->have_posts() && count($lista_vendedores) > 0) {
                 while ($result->have_posts()) {
                     $result->the_post();
                     $post_id = get_the_ID();
