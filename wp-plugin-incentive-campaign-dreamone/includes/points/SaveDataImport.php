@@ -49,6 +49,7 @@
                     $query->the_post();
 
                     $post_id = get_the_ID();
+                    SaveDataImport::readSaveSaller($post_id);
                     SaveDataImport::readSaveEntityData($post_id);
                     SaveDataImport::readSaveRankingEntityData($post_id);
                     SaveDataImport::readSaveRankingSellersData($post_id);
@@ -77,6 +78,56 @@
             }
 
            
+        }
+
+        public static function readSaveSaller($post_id)
+        {
+            $codigo_entidade = get_post_meta($post_id, 'codigo-entidade', true);
+            $nome_vendedor = get_post_meta($post_id, 'nome-vendedor', true);
+            $cpf_vendedor = get_post_meta($post_id, 'cpf-vendedor', true);
+            $codigo_operador = get_post_meta($post_id, 'codigo-operador', true);
+            $uf_vendedor = get_post_meta($post_id, 'uf-vendedor', true);
+            $regiao_vendedor = get_post_meta($post_id, 'regiao-vendedor', true);
+
+            $args = array(
+                'post_type' => 'vendedores',  
+                'posts_per_page' => 1,
+                'meta_query' => array(
+                'relation' => 'AND',
+                    [
+                        'meta_key' => 'cpf-vendedor',
+                        'meta_value' => $cpf_vendedor,
+                    ]
+                ),
+            );
+            $vendedores_query = new WP_Query($args);
+                // Se o $codigo_entidade existir, atualize-o, caso contrário, insira um novo
+            if ($vendedoresquery->have_posts()) {
+                // Atualizar o post existente
+                $vendedores_post = $vendedores_query->posts[0];
+                $vendedores_post_id = $vendedores_post->ID;
+                // Atualizar o título do post
+                $vendedores_post->post_title = $nome_vendedor;
+                wp_update_post($vendedores_post);
+                update_post_meta($vendedores_post_id, 'codigo-entidade', $codigo_entidade);
+                update_post_meta($vendedores_post_id, 'codigo-operador', $codigo_operador);
+                update_post_meta($vendedores_post_id, 'uf-vendedor', $uf_vendedor);
+                update_post_meta($vendedores_post_id, 'regiao-vendedor', $regiao_vendedor);
+            } else {
+                // Inserir no post_type 'vendedores'
+                $vendedores_post = array(
+                    'post_title'    => $nome_vendedor,
+                    'post_type'     => 'vendedores',
+                    'post_status'   => 'publish',
+                );
+                // Insere o post e retorna o ID
+                $vendedores_post_id = wp_insert_post($vendedores_post);
+                // Adiciona os metadados ao post_type 'vendedores'
+                update_post_meta($vendedores_post_id, 'codigo-entidade', $codigo_entidade);
+                update_post_meta($vendedores_post_id, 'codigo-operador', $codigo_operador);
+                update_post_meta($vendedores_post_id, 'uf-vendedor', $uf_vendedor);
+                update_post_meta($vendedores_post_id, 'regiao-vendedor', $regiao_vendedor);
+            }
         }
 
         public static function readSaveEntityData($post_id)

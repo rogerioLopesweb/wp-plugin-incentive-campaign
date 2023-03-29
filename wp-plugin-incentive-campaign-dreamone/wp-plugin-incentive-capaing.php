@@ -16,8 +16,10 @@ License: GPL2
 define( 'CP_PLUGIN_URL', __FILE__ );
 include __DIR__ . '/includes/login/Login.php';
 include __DIR__ . '/includes/points/SaveDataImport.php';
+include __DIR__ . '/includes/ranking/Ranking.php';
 
 Login::init();
 SaveDataImport::init();
+Ranking::init();
 
 ?>
