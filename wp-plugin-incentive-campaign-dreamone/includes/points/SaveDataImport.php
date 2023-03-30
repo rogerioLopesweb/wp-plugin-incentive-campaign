@@ -22,8 +22,6 @@
                 }
             );
         }
-  
-        
         public static function readSaveData() {
             // Define the query arguments
             $args = array(
@@ -41,30 +39,24 @@
 
             // Create a new instance of WP_Query
             $query = new WP_Query($args);
-
             // Check if there are any posts matching the query
             if ($query->have_posts()) {
                 // Loop through the posts
                 while ($query->have_posts()) {
                     $query->the_post();
-
                     $post_id = get_the_ID();
                     SaveDataImport::readSaveSaller($post_id);
                     SaveDataImport::readSaveEntityData($post_id);
                     SaveDataImport::readSaveRankingEntityData($post_id);
                     SaveDataImport::readSaveRankingSellersData($post_id);
-                    
                     update_post_meta($post_id, 'sincronizacao-status', 'OK');
                 }
-                
                 // Reset the post data after the loop
                 wp_reset_postdata();
-
                 $response = array(
                     'success' => true,
                     'message' => 'Sinscronizacao realiazada',
                 );
-            
                 // Send the JSON response
                 return wp_send_json($response);
             } else {
@@ -72,14 +64,10 @@
                     'success' => true,
                     'message' => 'Nenhum registro para sicronizar',
                 );
-            
                 // Send the JSON response
                 return wp_send_json($response);
             }
-
-           
         }
-
         public static function readSaveSaller($post_id)
         {
             $codigo_entidade = get_post_meta($post_id, 'codigo-entidade', true);
@@ -131,7 +119,6 @@
                 update_post_meta($vendedores_post_id, 'regiao-vendedor', $regiao_vendedor);
             }
         }
-
         public static function readSaveEntityData($post_id)
         {
             $codigo_entidade = get_post_meta($post_id, 'codigo-entidade', true);
@@ -180,9 +167,6 @@
                 update_post_meta($entidade_post_id, 'entity-region', $regiao_vendedor);
             }
         }
-
-       
-
         public static function readSaveRankingEntityData($post_id)
         {
             $ano =  get_post_meta($post_id, 'ano', true);
@@ -250,7 +234,6 @@
                 update_post_meta($new_post_id, 'entidade-porcentual', $porcentual);
             }
         }
-
         public static function readSaveRankingSellersData($post_id)
         {
             $ano =  get_post_meta($post_id, 'ano', true);
@@ -355,8 +338,5 @@
             }
 
         }
-
-
-
     }
     ?>

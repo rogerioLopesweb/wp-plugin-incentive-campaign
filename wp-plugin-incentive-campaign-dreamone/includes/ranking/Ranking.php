@@ -6,6 +6,120 @@
             add_shortcode('ranking_entidades', 'Ranking::entidades');
             add_shortcode('ranking_vendedores_nacional', 'Ranking::vendedoresNacional');
             add_shortcode('ranking_vendedores_regional', 'Ranking::vendedoresRegional');
+            add_shortcode('ranking_vendedor_dados', 'Ranking::vendedorRankingDados');
+            add_shortcode('ranking__entidade_vendedor_dados', 'Ranking::vendedorRankingEntidadeDados');
+            //vendedorRakingDados
+        }
+        
+        public static function vendedorRankingDados($atts){
+            // Atributos padrão
+            $atts = shortcode_atts(
+                array(
+                    'campo' => "cpf"
+                ),
+                $atts,
+                'ranking_vendedor_dados'
+            );
+            $ano = get_option('configuracao-rankings')['ano-de-exibicao'];
+            $trimestre = get_option('configuracao-rankings')['trimestre-de-exibicao'];
+            $campo = $atts['campo'];
+
+            //pega o código da entidade do usuário logado
+            $current_user_id = get_current_user_id();
+            $user_code_entity = get_user_meta($current_user_id, 'user-code-entity', true);
+            $user_cpf = get_user_meta($current_user_id, 'user-cpf', true);
+
+            $args = array(
+                'post_type' => 'ranking-vendedores',
+                'posts_per_page' => 1,
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array(
+                        'key' => 'ano',
+                        'value' => $ano,
+                        'compare' => '='
+                    ),
+                    array(
+                        'key' => 'trimestre',
+                        'value' =>  $trimestre,
+                        'compare' => '='
+                    ),
+                    array(
+                        'key' => 'cpf-vendedor',
+                        'value' =>  $user_cpf,
+                        'compare' => '='
+                    )
+                ),
+            );
+        
+            $result = new WP_Query($args);
+             
+            $retorno = "--";
+            if ($result->have_posts()) {
+                while ($result->have_posts()) {
+                    $result->the_post();
+                    $post_id = get_the_ID();
+                    $retorno  = get_post_meta($post_id, $campo, true);
+                }
+                wp_reset_postdata();
+            }
+            $retorno = str_replace('%', '', $retorno);
+           echo $retorno;
+        }
+        public static function vendedorRankingEntidadeDados($atts){
+            // Atributos padrão
+            $atts = shortcode_atts(
+                array(
+                    'campo' => "code"
+                ),
+                $atts,
+                'ranking__entidade_vendedor_dados'
+            );
+            $ano = get_option('configuracao-rankings')['ano-de-exibicao'];
+            $trimestre = get_option('configuracao-rankings')['trimestre-de-exibicao'];
+            $campo = $atts['campo'];
+
+            //pega o código da entidade do usuário logado
+            $current_user_id = get_current_user_id();
+            $user_code_entity = get_user_meta($current_user_id, 'user-code-entity', true);
+            $user_cpf = get_user_meta($current_user_id, 'user-cpf', true);
+
+            $args = array(
+                'post_type' => 'ranking-entidades',
+                'posts_per_page' => 1,
+                'meta_query' => array(
+                    'relation' => 'AND',
+                    array(
+                        'key' => 'ano',
+                        'value' => $ano,
+                        'compare' => '='
+                    ),
+                    array(
+                        'key' => 'trimestre',
+                        'value' =>  $trimestre,
+                        'compare' => '='
+                    ),
+                    array(
+                        'key' => 'codigo-entidade',
+                        'value' =>  $user_code_entity,
+                        'compare' => '='
+                    )
+                ),
+            );
+
+            $result = new WP_Query($args);
+             
+            $retorno = "--";
+            if ($result->have_posts()) {
+                while ($result->have_posts()) {
+                    $result->the_post();
+                    $post_id = get_the_ID();
+                    $retorno  = get_post_meta($post_id, $campo, true);
+                }
+                wp_reset_postdata();
+            }
+            $retorno = str_replace('%', '', $retorno);
+           echo $retorno;
         }
         public static function entidades($atts){
             // Atributos padrão
@@ -41,9 +155,9 @@
                     'key' => 'entidade-trimestre',
                     'value' =>  $trimestre,
                     'compare' => '='
-                )
-            ),
-        );
+                    )
+                ),
+            );
             
             $result = new WP_Query($args);
             
@@ -75,7 +189,6 @@
             }else{
                 echo '<div class="ranking-text">Nada encontrado</div>';
             }
-            wp_reset_query();
         }
         public static function vendedoresNacional($atts){
             // Atributos padrão
@@ -150,7 +263,6 @@
             }else{
                 echo '<div class="ranking-text">Nada encontrado</div>';
             }
-            wp_reset_query();
         }
         public static function vendedoresRegional($atts){
             // Atributos padrão
@@ -185,9 +297,10 @@
                 ),
             );
             
-            $query = new WP_Query($args);
+            $result = new WP_Query($args);
             $regiao_vendedor = "---";
-            if ($query->have_posts()) {
+            if ($result->have_posts()) {
+                $result->the_post();
                 $post_id = get_the_ID();
                 $regiao_vendedor  = get_post_meta($post_id, 'regiao-vendedor', true);
             }
@@ -205,17 +318,19 @@
                 ),
             );
             
-            $query = new WP_Query($args);
+            $result = new WP_Query($args);
+
             $lista_vendedores = array();
-            if ($query->have_posts()) {
+            if ($result->have_posts()) {
                 while ($result->have_posts()) {
+                    $result->the_post();
                     $post_id = get_the_ID();
                     $cpf_vendedor = get_post_meta($post_id, 'cpf-vendedor', true);
-                    $lista_vendedores.push($cpf_vendedor);
+                    $lista_vendedores[] = $cpf_vendedor;
                 }
                 wp_reset_postdata();
             }
-            wp_reset_query();
+
 
            $args = array(
             'post_type' => 'ranking-vendedores',
@@ -244,7 +359,7 @@
             )
         );
             
-            $result = new WP_Query($args);
+        $result = new WP_Query($args);
             
             if ($result->have_posts() && count($lista_vendedores) > 0) {
                 while ($result->have_posts()) {
@@ -276,7 +391,7 @@
             }else{
                 echo '<div class="ranking-text">Nada encontrado</div>';
             }
-            wp_reset_query();
+    
         }
     }
     ?>
