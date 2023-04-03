@@ -45,6 +45,7 @@
                 while ($query->have_posts()) {
                     $query->the_post();
                     $post_id = get_the_ID();
+                    SaveDataImport::readSaveGeneral($post_id);
                     SaveDataImport::readSaveSaller($post_id);
                     SaveDataImport::readSaveEntityData($post_id);
                     SaveDataImport::readSaveRankingEntityData($post_id);
@@ -66,6 +67,56 @@
                 );
                 // Send the JSON response
                 return wp_send_json($response);
+            }
+        }
+        public static function readSaveGeneral($post_id)
+        {
+            $ano =  get_post_meta($post_id, 'ano', true);
+            $trimestre =  get_post_meta($post_id, 'trimestre', true);
+            $atingimento_global = get_post_meta($post_id, 'atingimento-global', true);
+
+            
+
+            $args = array(
+                'post_type' => 'marcadores-geral',  
+                'posts_per_page' => 1,
+                'meta_query' => array(
+                'relation' => 'AND',
+                    [
+                        'meta_key' => 'ano',
+                        'meta_value' => $ano,
+                    ],
+                    [
+                        'meta_key' => 'trimestre',
+                        'meta_value' => $trimestre,
+                    ]
+                ),
+            );
+            $result = new WP_Query($args);
+            if ($result->have_posts()) {
+                // Atualizar o post existente
+                $marcadores_geral_post = $result->posts[0];
+                $marcadores_geral_post_id = $marcadores_geral_post->ID;
+                // Atualizar o título do post
+                $marcadores_geral_post->post_title = $ano .'-'.$trimestre;
+                wp_update_post($marcadores_geral_post);
+                update_post_meta($marcadores_geral_post_id, 'ano', $ano);
+                update_post_meta($marcadores_geral_post_id, 'trimestre', $trimestre);
+                update_post_meta($marcadores_geral_post_id, 'atingimento-global', $atingimento_global );    
+            } else {
+                // Inserir no post_type 'marcadores-geral'
+                $marcadores_geral_post = array(
+                    'post_title'    => $ano .'-'.$trimestre,
+                    'post_type'     => 'marcadores-geral',
+                    'post_status'   => 'publish',
+                );
+                // Insere o post e retorna o ID
+                $marcadores_geral_post_id = wp_insert_post($marcadores_geral_post);
+                // Adiciona os metadados ao post_type 'marcadores-geral'
+                update_post_meta($marcadores_geral_post_id, 'ano', $ano);
+                update_post_meta($marcadores_geral_post_id, 'trimestre', $trimestre);
+                update_post_meta($marcadores_geral_post_id, 'atingimento-global', $atingimento_global );
+               
             }
         }
         public static function readSaveSaller($post_id)
@@ -126,7 +177,6 @@
             $curva_entidade = get_post_meta($post_id, 'curva-entidade', true);
             $uf_vendedor = get_post_meta($post_id, 'uf-vendedor', true);
             $regiao_vendedor = get_post_meta($post_id, 'regiao-vendedor', true);
-
             $args = array(
                 'post_type' => 'entidades',  
                 'posts_per_page' => 1,
@@ -251,6 +301,9 @@
             $vendas_hunter  =  get_post_meta($post_id, 'realizado-total-hunter', true);
             $meta_hunter  =  get_post_meta($post_id, 'faturamento-minimo-hunter', true);
             $porcentual_atingimento_hunter  =  get_post_meta($post_id, 'atingimento-hunter', true);
+            $valor_premio_regional_hunter = get_post_meta($post_id, 'valor-premio-regional-hunter', true);
+            $valor_premio_nacional_hunter = get_post_meta($post_id, 'valor-premio-nacional-hunter', true);
+
 
             $pontos_vendas_farmer =  get_post_meta($post_id, 'pontos-farmer-vendas', true);
             $pontos_total_farmer =  get_post_meta($post_id, 'pontos-farmer-vendas-trilha-total', true);
@@ -259,7 +312,11 @@
             $vendas_farmer =  get_post_meta($post_id, 'realizado-total-farmer', true);
             $meta_farmer =  get_post_meta($post_id, 'faturamento-minimo-farmer', true);
             $porcentual_atingimento_farmer =  get_post_meta($post_id, 'atingimento-farmer', true);
-
+            $percentual_aumento_semestre =  get_post_meta($post_id, 'percentual-aumento-semestre', true);
+            $valor_premio_regional_farmer = get_post_meta($post_id, 'valor-premio-regional-farmer', true);
+            $valor_premio_nacional_farmer = get_post_meta($post_id, 'valor-premio-nacional-farmer', true);
+        
+            
             $args = array(
                 'post_type' => 'ranking-vendedores',  
                 'posts_per_page' => 1,
@@ -299,6 +356,8 @@
                 update_post_meta($post->ID, 'vendas-hunter', $vendas_hunter);
                 update_post_meta($post->ID, 'meta-hunter', $meta_hunter);
                 update_post_meta($post->ID, 'porcentual-atingimento-hunter', $porcentual_atingimento_hunter);
+                update_post_meta($post->ID, 'valor-premio-regional-hunter', $valor_premio_regional_hunter );
+                update_post_meta($post->ID, 'valor-premio-nacional-hunter', $valor_premio_nacional_hunter );
                 update_post_meta($post->ID, 'pontos-vendas-farmer', $pontos_vendas_farmer);
                 update_post_meta($post->ID, 'pontos-total-farmer', $pontos_total_farmer);
                 update_post_meta($post->ID, 'nacional-posicao-farmer', $nacional_posicao_farmer);
@@ -306,7 +365,10 @@
                 update_post_meta($post->ID, 'vendas-farmer', $vendas_farmer);
                 update_post_meta($post->ID, 'meta-farmer', $meta_farmer);
                 update_post_meta($post->ID, 'porcentual-atingimento-farmer', $porcentual_atingimento_farmer);
-         
+                update_post_meta($post->ID, 'percentual-aumento-semestre-farmer', $percentual_aumento_semestre);
+                update_post_meta($post->ID, 'valor-premio-regional-farmer', $valor_premio_regional_farmer );
+                update_post_meta($post->ID, 'valor-premio-nacional-farmer', $valor_premio_nacional_farmer );
+               
             } else {
                 // Inserir no post_type 'ranking-entidades'
                 $entidade_post = array(
@@ -328,6 +390,8 @@
                 update_post_meta($new_post_id, 'vendas-hunter', $vendas_hunter);
                 update_post_meta($new_post_id, 'meta-hunter', $meta_hunter);
                 update_post_meta($new_post_id, 'porcentual-atingimento-hunter', $porcentual_atingimento_hunter);
+                update_post_meta($new_post_id, 'valor-premio-regional-hunter', $valor_premio_regional_hunter );
+                update_post_meta($new_post_id, 'valor-premio-nacional-hunter', $valor_premio_nacional_hunter );
                 update_post_meta($new_post_id, 'pontos-vendas-farmer', $pontos_vendas_farmer);
                 update_post_meta($new_post_id, 'pontos-total-farmer', $pontos_total_farmer);
                 update_post_meta($new_post_id, 'nacional-posicao-farmer', $nacional_posicao_farmer);
@@ -335,6 +399,9 @@
                 update_post_meta($new_post_id, 'vendas-farmer', $vendas_farmer);
                 update_post_meta($new_post_id, 'meta-farmer', $meta_farmer);
                 update_post_meta($new_post_id, 'porcentual-atingimento-farmer', $porcentual_atingimento_farmer);
+                update_post_meta($new_post_id, 'percentual-aumento-semestre-farmer', $percentual_aumento_semestre);
+                update_post_meta($new_post_id, 'valor-premio-regional-farmer', $valor_premio_regional_farmer );
+                update_post_meta($new_post_id, 'valor-premio-nacional-farmer', $valor_premio_nacional_farmer );
             }
 
         }

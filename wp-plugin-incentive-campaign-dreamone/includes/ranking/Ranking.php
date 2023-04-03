@@ -7,7 +7,7 @@
             add_shortcode('ranking_vendedores_nacional', 'Ranking::vendedoresNacional');
             add_shortcode('ranking_vendedores_regional', 'Ranking::vendedoresRegional');
             add_shortcode('ranking_vendedor_dados', 'Ranking::vendedorRankingDados');
-            add_shortcode('ranking__entidade_vendedor_dados', 'Ranking::vendedorRankingEntidadeDados');
+            add_shortcode('ranking_entidade_vendedor_dados', 'Ranking::vendedorRankingEntidadeDados');
             //vendedorRakingDados
         }
         
@@ -59,7 +59,11 @@
                 while ($result->have_posts()) {
                     $result->the_post();
                     $post_id = get_the_ID();
-                    $retorno  = get_post_meta($post_id, $campo, true);
+                    if($campo == "title"){
+                        $retorno = get_the_title($post_id);
+                    }else{
+                        $retorno  = get_post_meta($post_id, $campo, true);
+                    }
                 }
                 wp_reset_postdata();
             }
@@ -83,19 +87,19 @@
             $current_user_id = get_current_user_id();
             $user_code_entity = get_user_meta($current_user_id, 'user-code-entity', true);
             $user_cpf = get_user_meta($current_user_id, 'user-cpf', true);
-
+            
             $args = array(
                 'post_type' => 'ranking-entidades',
                 'posts_per_page' => 1,
                 'meta_query' => array(
                     'relation' => 'AND',
                     array(
-                        'key' => 'ano',
+                        'key' => 'entidade-ano',
                         'value' => $ano,
                         'compare' => '='
                     ),
                     array(
-                        'key' => 'trimestre',
+                        'key' => 'entidade-trimestre',
                         'value' =>  $trimestre,
                         'compare' => '='
                     ),
@@ -108,13 +112,17 @@
             );
 
             $result = new WP_Query($args);
-             
+         
             $retorno = "--";
             if ($result->have_posts()) {
                 while ($result->have_posts()) {
                     $result->the_post();
                     $post_id = get_the_ID();
-                    $retorno  = get_post_meta($post_id, $campo, true);
+                    if($campo == "title"){
+                        $retorno = get_the_title($post_id);
+                    }else{
+                        $retorno  = get_post_meta($post_id, $campo, true);
+                    }
                 }
                 wp_reset_postdata();
             }
@@ -183,11 +191,25 @@
                             $posicaoIcon = $entidade_posicao . 'º';
                             break;
                     }
-                    echo '<div class="ranking-line"><div class="ranking-position">'.$posicaoIcon.'</div><div class="ranking-text">'.$nome_entidade.' '.$entidade_pontos.' pontos</div></div>';
+                   // echo '<div class="ranking-line"><div class="ranking-position">'.$posicaoIcon.'</div><div class="ranking-text">'.$nome_entidade.' '.$entidade_pontos.' pontos</div></div>';
+
+                   echo '<div class="ranking-line">';
+                        echo '<div class="ranking-position">';
+                                echo $entidade_posicao . 'º';
+                        echo '</div>';
+                        echo '<div class="ranking-title">';
+                                echo $nome_entidade;
+                        echo '</div>';
+                        echo '<div class="ranking-points">';
+                                echo $entidade_pontos;
+                        echo '</div>';
+                   echo '</div>';
                 }
                 wp_reset_postdata();
             }else{
-                echo '<div class="ranking-text">Nada encontrado</div>';
+                echo '<div class="ranking-line">';
+                    echo '<div class="ranking-title">Nada encontrado</div>';
+                echo '</div>';
             }
         }
         public static function vendedoresNacional($atts){
@@ -238,6 +260,8 @@
                     $result->the_post();
                     $post_id = get_the_ID();
                     $nome_vendedor = get_the_title($post_id);
+                    $cpf_vendedor = get_post_meta($post_id, 'cpf-vendedor', true);
+                    $nome_entidade = Ranking::getEntidade($cpf_vendedor);
                     $pontos_vendas = get_post_meta($post_id, 'pontos-vendas-'.$tipo, true);
                     $pontos_trilha = get_post_meta($post_id, 'pontos-trilha', true);
                     $pontos_total  = get_post_meta($post_id, 'pontos-total-'.$tipo, true);
@@ -257,11 +281,27 @@
                             $posicaoIcon = $ranking_posicao . 'º';
                             break;
                     }
-                    echo '<div class="ranking-line"><div class="ranking-position">'.$posicaoIcon.'</div><div class="ranking-text">'.$nome_vendedor.' '.$pontos_total.' pontos</div></div>';
+                    //echo '<div class="ranking-line"><div class="ranking-position">'.$posicaoIcon.'</div><div class="ranking-text">'.$nome_vendedor.' '.$pontos_total.' pontos</div></div>';
+                    echo '<div class="ranking-line">';
+                        echo '<div class="ranking-position">';
+                                echo $ranking_posicao. 'º';
+                        echo '</div>';
+                        echo '<div class="ranking-entity">';
+                                echo $nome_entidade;
+                        echo '</div>';
+                        echo '<div class="ranking-title">';
+                                echo $nome_vendedor;
+                        echo '</div>';
+                        echo '<div class="ranking-points">';
+                                echo $pontos_total;
+                        echo '</div>';
+                   echo '</div>';
                 }
                 wp_reset_postdata();
             }else{
-                echo '<div class="ranking-text">Nada encontrado</div>';
+                echo '<div class="ranking-line">';
+                    echo '<div class="ranking-title">Nada encontrado</div>';
+                echo '</div>';
             }
         }
         public static function vendedoresRegional($atts){
@@ -305,6 +345,8 @@
                 $regiao_vendedor  = get_post_meta($post_id, 'regiao-vendedor', true);
             }
 
+            
+
             //pega todos os vendedores da mesma regiao
             $args = array(
                 'post_type' => 'vendedores',
@@ -330,8 +372,7 @@
                 }
                 wp_reset_postdata();
             }
-
-
+                
            $args = array(
             'post_type' => 'ranking-vendedores',
             'posts_per_page' => $qtd,
@@ -352,7 +393,7 @@
                 )
                 ,
                 array(
-                    'key' => 'cpf',
+                    'key' => 'cpf-vendedor',
                     'value' =>  $lista_vendedores,
                     'compare' => 'in'
                 )
@@ -365,6 +406,7 @@
                 while ($result->have_posts()) {
                     $result->the_post();
                     $post_id = get_the_ID();
+                    $nome_entidade = Ranking::getEntidade($cpf_vendedor);
                     $nome_vendedor = get_the_title($post_id);
                     $pontos_vendas = get_post_meta($post_id, 'pontos-vendas-'.$tipo, true);
                     $pontos_trilha = get_post_meta($post_id, 'pontos-trilha', true);
@@ -385,13 +427,88 @@
                             $posicaoIcon = $ranking_posicao . 'º';
                             break;
                     }
-                    echo '<div class="ranking-line"><div class="ranking-position">'.$posicaoIcon.'</div><div class="ranking-text">'.$nome_vendedor.' '.$pontos_total.' pontos</div></div>';
+                    //echo '<div class="ranking-line"><div class="ranking-position">'.$posicaoIcon.'</div><div class="ranking-text">'.$nome_vendedor.' '.$pontos_total.' pontos</div></div>';
+
+                    echo '<div class="ranking-line">';
+                        echo '<div class="ranking-position">';
+                                echo $ranking_posicao. 'º';
+                        echo '</div>';
+                        echo '<div class="ranking-entity">';
+                                echo $nome_entidade;
+                        echo '</div>';
+                        echo '<div class="ranking-title">';
+                                echo $nome_vendedor;
+                        echo '</div>';
+                        echo '<div class="ranking-points">';
+                                echo $pontos_total;
+                        echo '</div>';
+                   echo '</div>';
                 }
                 wp_reset_postdata();
             }else{
-                echo '<div class="ranking-text">Nada encontrado</div>';
+                echo '<div class="ranking-line">';
+                    echo '<div class="ranking-title">Nada encontrado</div>';
+                echo '</div>';
             }
     
+        }
+
+        public static function getEntidade($cpf)
+        {
+            //pega o codigo da entidade
+            $args = array(
+                'post_type' => 'vendedores',
+                'posts_per_page' => 1, 
+                'meta_query' => array(
+                    array(
+                        'key' => 'cpf-vendedor',
+                        'value' => $cpf,
+                        'compare' => '='
+                    )
+                ),
+            );
+            
+            $result = new WP_Query($args);
+            
+            $nome_entidade = "-";
+            $codigo_entidade = "-";
+            if ($result->have_posts()) {
+                while ($result->have_posts()) {
+                    $result->the_post();
+                    $post_id = get_the_ID();
+                    $codigo_entidade= get_post_meta($post_id, 'codigo-entidade', true);
+                }
+                wp_reset_postdata();
+            }
+
+
+            //pega o codigo da entidade
+            $args = array(
+                'post_type' => 'entidades',
+                'posts_per_page' => 1, 
+                'meta_query' => array(
+                    array(
+                        'key' => 'entity-code',
+                        'value' => $codigo_entidade,
+                        'compare' => '='
+                    )
+                ),
+            );
+            
+            $result = new WP_Query($args);
+            
+            $nome_entidade = "--";
+            if ($result->have_posts()) {
+                while ($result->have_posts()) {
+                    $result->the_post();
+                    $post_id = get_the_ID();
+                    $nome_entidade = get_the_title();
+                }
+                wp_reset_postdata();
+            }
+            
+            return $nome_entidade;
+
         }
     }
     ?>

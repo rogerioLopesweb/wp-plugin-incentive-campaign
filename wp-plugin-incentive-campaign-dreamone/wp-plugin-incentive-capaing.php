@@ -15,11 +15,15 @@ License: GPL2
 */
 define( 'CP_PLUGIN_URL', __FILE__ );
 include __DIR__ . '/includes/login/Login.php';
+include __DIR__ . '/includes/general/General.php';
 include __DIR__ . '/includes/points/SaveDataImport.php';
 include __DIR__ . '/includes/ranking/Ranking.php';
+include __DIR__ . '/includes/entity/EntitySeller.php';
 
 Login::init();
+General::init();
 SaveDataImport::init();
 Ranking::init();
+EntitySeller::init();
 
 ?>
