@@ -49,7 +49,7 @@
                 }
                 wp_reset_postdata();
             }
-           echo $retorno;
+           return $retorno;
         }
     }
 ?>

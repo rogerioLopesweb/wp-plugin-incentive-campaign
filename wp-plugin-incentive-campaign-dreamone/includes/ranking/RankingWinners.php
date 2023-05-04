@@ -1,147 +1,25 @@
 <?php
-    class Ranking
+    class RankingWinners
     {
         public static function init()
         {
-            add_shortcode('ranking_entidades', 'Ranking::entidades');
-            add_shortcode('ranking_vendedores_nacional', 'Ranking::vendedoresNacional');
-            add_shortcode('ranking_vendedores_regional', 'Ranking::vendedoresRegional');
-            add_shortcode('ranking_vendedor_dados', 'Ranking::vendedorRankingDados');
-            add_shortcode('ranking_entidade_vendedor_dados', 'Ranking::vendedorRankingEntidadeDados');
-            //vendedorRakingDados
+            add_shortcode('rankwinners_entidades', 'RankingWinners::ganhadoresEntidades');
+            add_shortcode('rankwinners_nacional', 'RankingWinners::ganhadoresNacional');
+            add_shortcode('rankwinners_regional', 'RankingWinners::ganhadoresRegional');
+           
         }
         
-        public static function vendedorRankingDados($atts){
-            // Atributos padrão
-            $atts = shortcode_atts(
-                array(
-                    'campo' => "cpf"
-                ),
-                $atts,
-                'ranking_vendedor_dados'
-            );
-            $ano = get_option('configuracao-rankings')['ano-de-exibicao'];
-            $trimestre = get_option('configuracao-rankings')['trimestre-de-exibicao'];
-            $campo = $atts['campo'];
-
-            //pega o código da entidade do usuário logado
-            $current_user_id = get_current_user_id();
-            $user_code_entity = get_user_meta($current_user_id, 'user-code-entity', true);
-            $user_cpf = get_user_meta($current_user_id, 'user-cpf', true);
-
-            $args = array(
-                'post_type' => 'ranking-vendedores',
-                'post_status' => 'publish',
-                'posts_per_page' => 1,
-                'meta_query' => array(
-                    'relation' => 'AND',
-                    array(
-                        'key' => 'ano',
-                        'value' => $ano,
-                        'compare' => '='
-                    ),
-                    array(
-                        'key' => 'trimestre',
-                        'value' =>  $trimestre,
-                        'compare' => '='
-                    ),
-                    array(
-                        'key' => 'cpf-vendedor',
-                        'value' =>  $user_cpf,
-                        'compare' => '='
-                    )
-                ),
-            );
-        
-            $result = new WP_Query($args);
-             
-            $retorno = "--";
-            if ($result->have_posts()) {
-                while ($result->have_posts()) {
-                    $result->the_post();
-                    $post_id = get_the_ID();
-                    if($campo == "title"){
-                        $retorno = get_the_title($post_id);
-                    }else{
-                        $retorno  = get_post_meta($post_id, $campo, true);
-                    }
-                }
-                wp_reset_postdata();
-            }
-            $retorno = str_replace('%', '', $retorno);
-           return $retorno;
-        }
-        public static function vendedorRankingEntidadeDados($atts){
-            // Atributos padrão
-            $atts = shortcode_atts(
-                array(
-                    'campo' => "code"
-                ),
-                $atts,
-                'ranking_entidade_vendedor_dados'
-            );
-            $ano = get_option('configuracao-rankings')['ano-de-exibicao'];
-            $trimestre = get_option('configuracao-rankings')['trimestre-de-exibicao'];
-            $campo = $atts['campo'];
-
-            //pega o código da entidade do usuário logado
-            $current_user_id = get_current_user_id();
-            $user_code_entity = get_user_meta($current_user_id, 'user-code-entity', true);
-            $user_cpf = get_user_meta($current_user_id, 'user-cpf', true);
-            
-            $args = array(
-                'post_type' => 'ranking-entidades',
-                'post_status' => 'publish',
-                'posts_per_page' => 1,
-                'meta_query' => array(
-                    'relation' => 'AND',
-                    array(
-                        'key' => 'entidade-ano',
-                        'value' => $ano,
-                        'compare' => '='
-                    ),
-                    array(
-                        'key' => 'entidade-trimestre',
-                        'value' =>  $trimestre,
-                        'compare' => '='
-                    ),
-                    array(
-                        'key' => 'codigo-entidade',
-                        'value' =>  $user_code_entity,
-                        'compare' => '='
-                    )
-                ),
-            );
-
-            $result = new WP_Query($args);
-         
-            $retorno = "--";
-            if ($result->have_posts()) {
-                while ($result->have_posts()) {
-                    $result->the_post();
-                    $post_id = get_the_ID();
-                    if($campo == "title"){
-                        $retorno = get_the_title($post_id);
-                    }else{
-                        $retorno  = get_post_meta($post_id, $campo, true);
-                    }
-                }
-                wp_reset_postdata();
-            }
-            $retorno = str_replace('%', '', $retorno);
-           return $retorno;
-        }
-        public static function entidades($atts){
+        public static function ganhadoresEntidades($atts){
             // Atributos padrão
             $atts = shortcode_atts(
                 array(
                     'qtd' => 3, // Quantidade padrão de itens a serem exibidos
                 ),
                 $atts,
-                'ranking_entidades'
+                'rankingwinners_entidades'
             );
-            $ano = get_option('configuracao-rankings')['ano-de-exibicao'];
-            $trimestre = get_option('configuracao-rankings')['trimestre-de-exibicao'];
+            $ano = get_option('configuracao-rankings')['ganhadores-ano'];
+            $trimestre = get_option('configuracao-rankings')['ganhadores-trimestre'];
             $qtd = $atts['qtd'];
            // echo $ano . '-' .$trimestre .'-'.$qtd; 
            // $ano = 2023;
@@ -154,7 +32,7 @@
             echo '<tr>';
             echo '<th data-th="POSIÇÃO">POSIÇÃO</th>';
             echo '<th data-th="ENTIDADE">ENTIDADE</th>';
-            echo '<th data-th="PONTOS">PONTOS</th>';
+            //echo '<th data-th="PONTOS">PONTOS</th>';
             echo '</tr>';
             echo '</thead>';
             echo '<tbody>';
@@ -168,6 +46,11 @@
                 'order' => 'ASC',
                 'meta_query' => array(
                     'relation' => 'AND',
+                    array(
+                        'key' => 'ganhador-nacional-entidade',
+                        'value' => 'S',
+                        'compare' => '='
+                    ),
                     array(
                         'key' => 'entidade-ano',
                         'value' => $ano,
@@ -220,25 +103,15 @@
                         echo '<tr' . $class . '>';
                         echo '<td data-th="POSIÇÃO">' . $entidade_posicao . 'º</td>';
                         echo '<td data-th="ENTIDADE">' . $nome_entidade . '</td>';
-                        echo '<td data-th="PONTOS">' . $entidade_pontos . '</td>';
+                        //echo '<td data-th="PONTOS">' . $entidade_pontos . '</td>';
                         echo '</tr>';
                     //}
                     
                 }
-
-                 // tr da posição da entidade do usuário
-                 $entidade_posicao =  do_shortcode('[ranking_entidade_vendedor_dados campo="entidade-posicao"]');
-                 $nome_entidade = do_shortcode('[ranking_entidade_vendedor_dados campo="title"]');
-                 $entidade_pontos = do_shortcode('[ranking_entidade_vendedor_dados campo="entidade-pontos"]');
-                 echo '<tr class="posicao-vendedor">';
-                 echo '<td data-th="POSIÇÃO">' . $entidade_posicao . 'º</td>';
-                 echo '<td data-th="ENTIDADE">' . $nome_entidade . '</td>';
-                 echo '<td data-th="PONTOS">' . $entidade_pontos . '</td>';
-                 echo '</tr>';
                  wp_reset_postdata();
             }else{
                 echo '<tr>';
-                echo '<td colspan="3">Nada encontrado</td>';
+                echo '<td colspan="2">Nada encontrado</td>';
                 echo '</tr>';
             }
          // Fechando a tabela e a div da tabela responsiva
@@ -246,18 +119,18 @@
          echo '</table>';
          echo '</div>';
         }
-        public static function vendedoresNacional($atts){
+        public static function ganhadoresNacional($atts){
             // Atributos padrão
             $atts = shortcode_atts(
                 array(
                     'qtd' => 3, // Quantidade padrão de itens a serem exibidos
-                    'tipo' => 'hunter', // Tipo pode ser hunter farmer
+                    'tipo' => 'hunter' // Tipo pode ser hunter farmer
                 ),
                 $atts,
-                'ranking_vendedores_nacional'
+                'rankiwinners_nacional'
             );
-            $ano = get_option('configuracao-rankings')['ano-de-exibicao'];
-            $trimestre = get_option('configuracao-rankings')['trimestre-de-exibicao'];
+            $ano = get_option('configuracao-rankings')['ganhadores-ano'];
+            $trimestre = get_option('configuracao-rankings')['ganhadores-trimestre'];
             $qtd = $atts['qtd'];
             $tipo = $atts['tipo'];
 
@@ -268,7 +141,7 @@
             echo '<th data-th="POSIÇÃO">POSIÇÃO</th>';
             echo '<th data-th="ENTIDADE">ENTIDADE</th>';
             echo '<th data-th="NOME">NOME</th>';
-            echo '<th data-th="PONTOS">PONTOS</th>';
+            //echo '<th data-th="PONTOS">PONTOS</th>';
             echo '</tr>';
             echo '</thead>';
             echo '<tbody>';
@@ -282,6 +155,11 @@
                 'post_status' => 'publish',
                 'meta_query' => array(
                     'relation' => 'AND',
+                    array(
+                        'key' => 'ganhador-nacional-'.$tipo,
+                        'value' => 'S',
+                        'compare' => '='
+                    ),
                     array(
                         'key' => 'ano',
                         'value' => $ano,
@@ -307,7 +185,7 @@
                 $post_id = get_the_ID();
                 $nome_vendedor = get_the_title($post_id);
                 $cpf_vendedor = get_post_meta($post_id, 'cpf-vendedor', true);
-                $nome_entidade = Ranking::getEntidade($cpf_vendedor);
+                $nome_entidade = RankingWinners::getEntidade($cpf_vendedor);
                 $pontos_vendas = get_post_meta($post_id, 'pontos-vendas-'.$tipo, true);
                 $pontos_trilha = get_post_meta($post_id, 'pontos-trilha', true);
                 $pontos_total  = get_post_meta($post_id, 'pontos-total-'.$tipo, true);
@@ -336,25 +214,13 @@
                 echo '<td data-th="POSIÇÃO">' . $ranking_posicao . 'º</td>';
                 echo '<td data-th="ENTIDADE">' . $nome_entidade . '</td>';
                 echo '<td data-th="NOME">' . $nome_vendedor . '</td>';
-                echo '<td data-th="PONTOS">' . $pontos_total . '</td>';
+                //echo '<td data-th="PONTOS">' . $pontos_total . '</td>';
                 echo '</tr>';
             }
-             // tr da posição da entidade do usuário
-             $ranking_posicao =  do_shortcode('[ranking_vendedor_dados campo="nacional-posicao-'.$tipo.'"]');
-             $cpf_vendedor = do_shortcode('[ranking_vendedor_dados campo="cpf-vendedor"]');
-             $nome_entidade = Ranking::getEntidade($cpf_vendedor);
-             $nome_vendedor = do_shortcode('[ranking_vendedor_dados campo="title"]');
-             $pontos_total = do_shortcode('[ranking_vendedor_dados campo="pontos-total-'.$tipo.'"]');
-             echo '<tr class="posicao-vendedor">';
-             echo '<td data-th="POSIÇÃO">' . $ranking_posicao . 'º</td>';
-             echo '<td data-th="ENTIDADE">' . $nome_entidade . '</td>';
-             echo '<td data-th="NOME">' . $nome_vendedor . '</td>';
-             echo '<td data-th="PONTOS">' . $pontos_total . '</td>';
-             echo '</tr>';
             wp_reset_postdata();
         } else {
             echo '<tr>';
-            echo '<td colspan="4">Nada encontrado</td>';
+            echo '<td colspan="3">Nada encontrado</td>';
             echo '</tr>';
         }
 
@@ -366,18 +232,18 @@
                 
         }
 		
-        public static function vendedoresRegional($atts){
+        public static function ganhadoresRegional($atts){
             // Atributos padrão
             $atts = shortcode_atts(
                 array(
                     'qtd' => 3, // Quantidade padrão de itens a serem exibidos
-                    'tipo' => 'hunter', // Tipo pode ser hunter farmer
+                    'tipo' => 'hunter' // Tipo pode ser hunter farmer
                 ),
                 $atts,
-                'ranking_vendedores_regional'
+                'rankwinners_regional'
             );
-            $ano = get_option('configuracao-rankings')['ano-de-exibicao'];
-            $trimestre = get_option('configuracao-rankings')['trimestre-de-exibicao'];
+            $ano = get_option('configuracao-rankings')['ganhadores-ano'];
+            $trimestre = get_option('configuracao-rankings')['ganhadores-trimestre'];
             $qtd = $atts['qtd'];
             $tipo = $atts['tipo'];
             
@@ -447,6 +313,11 @@
             'meta_query' => array(
                 'relation' => 'AND',
                 array(
+                    'key' => 'ganhador-regional-'.$tipo,
+                    'value' => 'S',
+                    'compare' => '='
+                ),
+                array(
                     'key' => 'ano',
                     'value' => $ano,
                     'compare' => '='
@@ -479,7 +350,7 @@
             echo '<th data-th="POSIÇÃO">POSIÇÃO</th>';
             echo '<th data-th="ENTIDADE">ENTIDADE</th>';
             echo '<th data-th="NOME">NOME</th>';
-            echo '<th data-th="PONTOS">PONTOS</th>';
+            //echo '<th data-th="PONTOS">PONTOS</th>';
             echo '</tr>';
             echo '</thead>';
             echo '<tbody>';
@@ -488,7 +359,7 @@
                 while ($result->have_posts()) {
                     $result->the_post();
                     $post_id = get_the_ID();
-                    $nome_entidade = Ranking::getEntidade($cpf_vendedor);
+                    $nome_entidade = RankingWinners::getEntidade($cpf_vendedor);
                     $nome_vendedor = get_the_title($post_id);
                     $pontos_vendas = get_post_meta($post_id, 'pontos-vendas-'.$tipo, true);
                     $pontos_trilha = get_post_meta($post_id, 'pontos-trilha', true);
@@ -517,26 +388,13 @@
                     echo '<td data-th="POSIÇÃO">' . $ranking_posicao . 'º</td>';
                     echo '<td data-th="ENTIDADE">' . $nome_entidade . '</td>';
                     echo '<td data-th="NOME">' . $nome_vendedor . '</td>';
-                    echo '<td data-th="PONTOS">' . $pontos_total . '</td>';
+                    //echo '<td data-th="PONTOS">' . $pontos_total . '</td>';
                     echo '</tr>';
                 }
-
-                // tr da posição da entidade do usuário
-                $ranking_posicao =  do_shortcode('[ranking_vendedor_dados campo="regional-posicao-'.$tipo.'"]');
-                $cpf_vendedor = do_shortcode('[ranking_vendedor_dados campo="cpf-vendedor"]');
-                $nome_entidade = Ranking::getEntidade($cpf_vendedor);
-                $nome_vendedor = do_shortcode('[ranking_vendedor_dados campo="title"]');
-                $pontos_total = do_shortcode('[ranking_vendedor_dados campo="pontos-total-'.$tipo.'"]');
-                echo '<tr class="posicao-vendedor">';
-                echo '<td data-th="POSIÇÃO">' . $ranking_posicao . 'º</td>';
-                echo '<td data-th="ENTIDADE">' . $nome_entidade . '</td>';
-                echo '<td data-th="NOME">' . $nome_vendedor . '</td>';
-                echo '<td data-th="PONTOS">' . $pontos_total . '</td>';
-                echo '</tr>';
                 wp_reset_postdata();
             }else{
                 echo '<tr>';
-                echo '<td colspan="4">Nada encontrado</td>';
+                echo '<td colspan="3">Nada encontrado</td>';
                 echo '</tr>';
             }
 

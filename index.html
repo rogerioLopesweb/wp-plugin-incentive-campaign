@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+        table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px;
+  text-align: left;
+}
+
+th {
+  background-color: #f2f2f2;
+}
+
+@media only screen and (max-width: 600px) {
+  /* Transformar linhas em colunas */
+  tbody {
+    display: block;
+  }
+  tr {
+    display: flex;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+  }
+  td {
+    width: 100%;
+  }
+  td:before {
+    content: attr(data-label);
+    float: left;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+}
+    </style>
+  </head>
+  <body>
+    <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Idade</th>
+            <th>Profissão</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>João</td>
+            <td>30</td>
+            <td>Engenheiro</td>
+          </tr>
+          <tr>
+            <td>Maria</td>
+            <td>25</td>
+            <td>Desenvolvedora</td>
+          </tr>
+          <tr>
+            <td>Lucas</td>
+            <td>40</td>
+            <td>Designer</td>
+          </tr>
+        </tbody>
+      </table>
+      
+  </body>
+</html>

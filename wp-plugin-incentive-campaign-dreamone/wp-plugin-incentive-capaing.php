@@ -18,12 +18,15 @@ include __DIR__ . '/includes/login/Login.php';
 include __DIR__ . '/includes/general/General.php';
 include __DIR__ . '/includes/points/SaveDataImport.php';
 include __DIR__ . '/includes/ranking/Ranking.php';
+include __DIR__ . '/includes/ranking/RankingWinners.php';
 include __DIR__ . '/includes/entity/EntitySeller.php';
+
 
 Login::init();
 General::init();
 SaveDataImport::init();
 Ranking::init();
 EntitySeller::init();
+RankingWinners::init();
 
 ?>

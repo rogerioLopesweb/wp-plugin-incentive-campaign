@@ -7,6 +7,7 @@
 			add_shortcode( 'force_redirect_dashboard', 'Login::forceRedirectDashboard' );
 			add_shortcode( 'force_redirect_logoult', 'Login::forceRedirectLogoult' );
             add_shortcode( 'login_external_token', 'Login::loginExternalByToken' );
+            add_shortcode( 'login_redireciona_locomotiva', 'Login::UrlLocomotiva' );
             add_action("wp", "Login::forceRedirectAcceptedCampaignTerms");
         }
         public static function formLogin(){
@@ -64,6 +65,7 @@
             }
         }
         public static function loginExternalGetToken($login, $password){
+             //homologacao spc_vendas_dev producao = spc_vendas
             $curl = curl_init();
             curl_setopt_array($curl, [
                 CURLOPT_URL => "http://service2.funifier.com/v3/auth/token",
@@ -73,7 +75,7 @@
                 CURLOPT_TIMEOUT => 30,
                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
                 CURLOPT_CUSTOMREQUEST => "POST",
-                CURLOPT_POSTFIELDS => "apiKey=spc_vendas_dev&grant_type=password&username=".$login."&password=".$password,
+                CURLOPT_POSTFIELDS => "apiKey=spc_vendas&grant_type=password&username=".$login."&password=".$password,
                 CURLOPT_HTTPHEADER => [
                     "Content-Type: application/x-www-form-urlencoded"
                 ],
@@ -85,10 +87,17 @@
                 return "F";
             } else {
                 $data = json_decode($response,true);
-                if($data["statusCode"] == 500){
-                    return "F";
+                if (isset($data) && array_key_exists("statusCode", $data)) {
+                    if($data["statusCode"] == 500){
+                        return "F";
+                    }
                 }
-                return $data["access_token"];
+                if (isset($data) && array_key_exists("access_token", $data)) {
+                    return $data["access_token"];
+                }else{
+                    return $data["access_token"];
+                }
+               
             }
         }
         public static function loginExternalGetDataUserByToken($token){
@@ -156,12 +165,17 @@
             }
             $dataUser = json_decode($dataUserStr,true);
             return array("status"=>"S",
-            "msg" =>"<div class='sucesso-login'>LOGIN EXTERNO EFETUADO COM SUCESSO</div>",
-            "idUser"=>$dataUser["_id"],
-            "name"=>$dataUser["name"],
-            "email"=>$dataUser["email"],
-            "login" => $login,
-            "password" => $password);
+                "msg" =>"<div class='sucesso-login'>LOGIN EXTERNO EFETUADO COM SUCESSO</div>",
+                "idUser"=>$dataUser["_id"],
+                "name"=>$dataUser["name"],
+                "email"=>$dataUser["email"],
+                "login" => $login,
+                "password" => $password,
+                "telefone" => $dataUser["extra"]["telefone"],
+                "codigo_entidade" => $dataUser["extra"]["entity"],
+                "operador" =>$dataUser["extra"]["operador"],
+                "token" => $token
+            );
         }
         public static function loginWP($login, $password, $dataUserExternal){
             $credentials = array();
@@ -180,6 +194,8 @@
                 wp_set_current_user($user->ID);
                 wp_set_auth_cookie($user->ID, true);
                 $redirect_to = $_SERVER['REQUEST_URI'];
+                $idUser = $user->ID;
+                Login::saveDataUser($idUser,  $dataUserExternal);
                 wp_safe_redirect($redirect_to);
                 exit;
             }
@@ -197,7 +213,8 @@
                 'nickname'      =>  $dataUserExternal['first_name'],
                 'description'   =>  '',
             ) ;
-            $id = wp_insert_user( $WP_array ) ;
+            $idUser = wp_insert_user( $WP_array ) ;
+            Login::saveDataUser($idUser,  $dataUserExternal);
             Login::loginWP($login, $password, $dataUserExternal);
         }
         public  static function loginExternalByToken(){
@@ -212,9 +229,9 @@
               //  echo "<h3>Token decodificado</h3>";
                // echo  $token;
                 $dataUserExternal = json_decode(Login::loginExternalGetDataUserByToken($token),true);
-                //echo var_dump($dataUserStr);
+                $dataUserExternal["token"] = $token; 
                 $idUser =  $dataUserExternal["_id"];
-                $dataUser = Login::loginExternalGetDataUserFullByTokenID($token, $idUser);
+                //$dataUser = Login::loginExternalGetDataUserFullByTokenID($token, $idUser);
                 if($dataUser == "F") {
                     echo "<div class='erro-login'>OCORREU UM ERRO, FAVOR TENTAR NOVAMENTE</div>";
                     exit;
@@ -252,6 +269,10 @@
             }
         }
         public  static function forceRedirectLogin(){
+
+            if(is_user_logged_in() && current_user_can('administrator')) {
+                return "[form_login_custom]";
+             }
         	if(!is_user_logged_in()) {
                 echo "<div class='sucesso-login'>VOCÊ JÁ ESTÁ LOGADO, REDIRECIONANDO...</div>";
             	wp_redirect( get_site_url(). "/login");
@@ -261,7 +282,7 @@
         public  static function forceRedirectDashboard(){
         	if( is_user_logged_in() ) {
                 echo "<div class='sucesso-login'>VOCÊ JÁ ESTÁ LOGADO, REDIRECIONANDO...</div>";
-                wp_redirect( get_site_url(). "/dashboard");
+                wp_redirect( get_site_url(). "/indicadores");
                 exit();
            }
         }
@@ -290,6 +311,178 @@
                         }
                     }
                 }
+           }
+        }
+        public static function saveDataUser($idUser,  $dataUserExternal){
+            /*var_dump($dataUserExternal);
+            exit;*/
+          /*if(is_array($dataUserExternal)){
+              //$dataUserExternal["extra","entity"];
+           // Verifica se o array e a coluna existem antes de obter o valor
+           /*if (isset($dataUserExternal) && array_key_exists("_id", $dataUserExternal["name"])) {
+                $nome = $dataUserExternal["name"];
+            } else {
+                $nome = '';
+            }
+            if (isset($dataUserExternal) && array_key_exists("_id", $dataUserExternal["_id"])) {
+                $cpf = $dataUserExternal["_id"];
+            } else {
+                $cpf = '';
+            }
+            if (isset($dataUserExternal["extra"]) && array_key_exists("telefone", $dataUserExternal["extra"])) {
+                $telefone = $dataUserExternal["extra"]["telefone"];
+            } else {
+                $telefone = '';
+            }
+            if (isset($dataUserExternal["extra"]) && array_key_exists("operador", $dataUserExternal["extra"])) {
+                $operador = $dataUserExternal["extra"]["operador"];
+            } else {
+                $operador = '';
+            }
+
+            if (isset($dataUserExternal["entity"]) && array_key_exists("_id", $dataUserExternal["entity"])) {
+                $codigo_entidade = $dataUserExternal["entity"]["_id"];
+            } else {
+                $codigo_entidade = '';
+            }
+
+            if (isset($dataUserExternal["entity"]) && array_key_exists("name", $dataUserExternal["entity"])) {
+                $entidade = $dataUserExternal["entity"]["name"];
+            } else {
+                $entidade = '';
+            }
+
+            if (isset($dataUserExternal["entity"]) && array_key_exists("uf", $dataUserExternal["entity"])) {
+                $uf_entidade = $dataUserExternal["entity"]["uf"];
+            } else {
+                $uf_entidade = '';
+            }
+
+            if (isset($dataUserExternal["entity"]) && array_key_exists("region", $dataUserExternal["entity"])) {
+                $regiao_entidade = $dataUserExternal["entity"]["region"];
+            } else {
+                $regiao_entidade = '';
+            }
+
+            $curva_entidade = "";
+
+            
+
+            // Salva os valores como meta do usuário
+            update_user_meta( $idUser, 'user-cpf', $cpf );
+            update_user_meta( $idUser, 'user-seller', $nome );
+            update_user_meta( $idUser, 'user-telephone', $telefone );
+            update_user_meta( $idUser, 'user-code-operating', $operador );
+            update_user_meta( $idUser, 'user-code-entity', $codigo_entidade );
+            /*update_user_meta( $idUser, 'entidade', $entidade );
+            update_user_meta( $idUser, 'uf_entidade', $uf_entidade );
+            update_user_meta( $idUser, 'regiao_entidade', $regiao_entidade );*/
+            /*
+
+            $args = array(
+                'post_type' => 'entidades',  
+                'posts_per_page' => 1,
+                'meta_query' => array(
+                'relation' => 'AND',
+                    [
+                        'meta_key' => 'entity-code',
+                        'meta_value' => $codigo_entidade,
+                    ]
+                ),
+            );
+            $entidade_query = new WP_Query($args);
+            // Se o $codigo_entidade existir, atualize-o, caso contrário, insira um novo
+            if ($entidade_query->have_posts()) {
+            /*  // Atualizar o post existente
+                $entidade_post = $entidade_query->posts[0];
+                $entidade_post_id = $entidade_post->ID;
+                // Atualizar o título do post
+                $entidade_post->post_title = $entidade;
+                wp_update_post($entidade_post);
+                update_post_meta($entidade_post_id, 'entity-code', $codigo_entidade);
+                update_post_meta($entidade_post_id, 'entity-curve', $curva_entidade);
+                update_post_meta($entidade_post_id, 'entity-uf', $uf_entidade);
+                update_post_meta($entidade_post_id, 'entity-region', $regiao_entidade);*/
+                /*
+            } else {
+                // Inserir no post_type 'entidades'
+                $entidade_post = array(
+                    'post_title'    => $entidade,
+                    'post_type'     => 'entidades',
+                    'post_status'   => 'publish',
+                );
+                // Insere o post e retorna o ID
+                $entidade_post_id = wp_insert_post($entidade_post);
+                // Adiciona os metadados ao post_type 'entidades'
+                update_post_meta($entidade_post_id, 'entity-code', $codigo_entidade);
+                update_post_meta($entidade_post_id, 'entity-curve', $curva_entidade);
+                update_post_meta($entidade_post_id, 'entity-uf', $uf_entidade);
+                update_post_meta($entidade_post_id, 'entity-region', $regiao_entidade);
+            }
+          }*/
+
+           if (isset($dataUserExternal) && array_key_exists("name", $dataUserExternal)) {
+                $nome = $dataUserExternal["name"];
+            } else {
+                $nome = '';
+            }
+            if (isset($dataUserExternal) && array_key_exists("idUser", $dataUserExternal)) {
+                $cpf = $dataUserExternal["idUser"];
+            } else {
+                $cpf = '';
+            }
+            if (isset($dataUserExternal) && array_key_exists("telefone", $dataUserExternal)) {
+                $telefone = $dataUserExternal["telefone"];
+            } else {
+                $telefone = '';
+            }
+
+            if (isset($dataUserExternal) && array_key_exists("codigo_entidade", $dataUserExternal)) {
+                $codigo_entidade = $dataUserExternal["codigo_entidade"];
+            } else {
+                $codigo_entidade = '';
+            }
+            if (isset($dataUserExternal) && array_key_exists("operador", $dataUserExternal)) {
+                $operador = $dataUserExternal["operador"];
+            } else {
+                $operador = '';
+            }
+     
+            if (isset($dataUserExternal) && array_key_exists("token", $dataUserExternal)) {
+                $token = $dataUserExternal["token"];
+            } else {
+                $token = '';
+            }
+
+            update_user_meta( $idUser, 'user-cpf', $cpf );
+            update_user_meta( $idUser, 'user-seller', $nome );
+            update_user_meta( $idUser, 'user-telephone', $telefone );
+            update_user_meta( $idUser, 'user-code-operating', $operador );
+            update_user_meta( $idUser, 'user-code-entity', $codigo_entidade );
+            update_user_meta( $idUser, 'token', $token );
+           
+        }
+        public  static function UrlLocomotiva(){
+
+            if(is_user_logged_in() && current_user_can('administrator')) {
+                return "[login_redireciona_locomotiva]";
+             }
+        	if(is_user_logged_in()) {
+                $user_id = get_current_user_id();
+                $token = get_user_meta($user_id, 'token', true);
+                $tokenEncode = base64_encode("Bearer " . $token);
+                if ($token !== null && trim($token) !== '') {
+                   // echo "<br> https://homol.spc.funifier.com/?token=". $tokenEncode;
+                    wp_redirect( "https://spc.funifier.com?token=". $tokenEncode);
+                    exit();
+                  }else{
+                    wp_redirect( get_site_url());
+                    exit();
+               }
+                
+           }else{
+                wp_redirect( get_site_url(). "/login");
+                exit();
            }
         }
         public static function split_name($namaFull){
